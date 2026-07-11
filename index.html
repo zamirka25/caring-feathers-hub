@@ -361,8 +361,8 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
       </div>
       <div class="section">
         <h2>ℹ️ About</h2>
-        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;">Caring Feathers Finance Hub — v2.0 (July 2026), with shared team data and live sync.<br>
-        Starts with your homes and recurring bill schedules ready — just add amounts. Use “Load demo data” to explore the features with example figures.</p>
+        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;"><strong>Caring Feathers Finance Hub — version 2.2</strong> (11 July 2026)<br>
+        Shared team data with live sync · recurring-bill forecast to year end · phone notifications.</p>
       </div>
     </div>
 
@@ -1303,9 +1303,11 @@ function showNote(title, body) {
   } else fallback();
 }
 function testNotification() {
-  if (!('Notification' in window)) { toast('This browser does not support notifications'); return; }
-  if (Notification.permission !== 'granted') { toast('Enable notifications first (button on the left)'); return; }
+  if (!('Notification' in window)) { toast('❌ This browser does not support notifications'); return; }
+  if (Notification.permission === 'denied') { toast('❌ Blocked — allow notifications for this site in browser settings'); return; }
+  if (Notification.permission !== 'granted') { toast('❌ Not enabled yet — press "Enable notifications" first'); return; }
   showNote('Caring Feathers 🔔', 'Test reminder — notifications are working!');
+  toast('✓ Test sent! If nothing popped up, your device is hiding them — check Do Not Disturb / notification settings');
 }
 function dueBillsNow() {
   const od = bills.filter(isOverdue);
