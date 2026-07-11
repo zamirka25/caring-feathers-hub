@@ -490,9 +490,9 @@ function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replac
 /* =================== Data seeding =================== */
 function seedData(demo) {
   homes = [
-    { id: 'H001', name: 'Dove Lodge', city: 'Swindon', manager: '', bank: 'Monzo', monthlyBudget: 0, active: true },
-    { id: 'H002', name: 'Puffin Lodge', city: 'Burton', manager: '', bank: 'Barclays', monthlyBudget: 0, active: true },
-    { id: 'H003', name: 'Swan Lodge', city: '', manager: '', bank: 'Wise', monthlyBudget: 0, active: true }
+    { id: 'H001', name: 'Home 1', city: '', manager: '', bank: '', monthlyBudget: 0, active: true },
+    { id: 'H002', name: 'Home 2', city: '', manager: '', bank: '', monthlyBudget: 0, active: true },
+    { id: 'H003', name: 'Home 3', city: '', manager: '', bank: '', monthlyBudget: 0, active: true }
   ];
   if (demo) homes.forEach(h => h.monthlyBudget = 3000);
   bills = []; payments = [];
@@ -508,7 +508,7 @@ function seedData(demo) {
     if (demo && past) payments.push({ id: 'P' + String(++pn).padStart(4, '0'), billId: b.id, home, category: cat,
       paidDate: due, amount: String(amount), method: 'Bank Transfer', notes: 'Demo data' });
   };
-  const homeDefs = [['Dove Lodge', 'Monzo'], ['Puffin Lodge', 'Barclays'], ['Swan Lodge', 'Wise']];
+  const homeDefs = [['Home 1', ''], ['Home 2', ''], ['Home 3', '']];
   // Petty cash — every 4 weeks from 9 Mar 2026 (12 cycles, as in the original app)
   const pcDates = ['2026-03-09','2026-04-06','2026-05-04','2026-06-01','2026-06-29','2026-07-27','2026-08-24','2026-09-21','2026-10-19','2026-11-16','2026-12-14','2027-01-11'];
   homeDefs.forEach(([h, bank]) => pcDates.forEach(d => addBill(h, 'Petty Cash', bank, 'Every 4 Weeks', demo ? 250 : null, d, 7)));

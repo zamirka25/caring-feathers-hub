@@ -1,6 +1,6 @@
 # Caring Feathers Finance Hub
 
-Bill and budget manager for Caring Feathers Ltd residential homes.
+Bill and budget manager — installable web app (PWA).
 
 **Live app:** https://zamirka25.github.io/caring-feathers-hub/
 
