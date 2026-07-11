@@ -15,7 +15,9 @@ Bill and budget manager — installable web app (PWA).
 - JSON backup export / import
 
 ## Notes
-- Data is stored locally in each device's browser (no server). Export a backup regularly from Settings.
-- Use **Settings → Load demo data** to explore the features with example figures.
+- v2.0: data lives in a shared cloud database (Supabase) with team login — everyone sees changes live.
+- Team members are managed in the Supabase dashboard (Authentication → Users).
+- Use **Settings → Load demo data** to explore the features with example figures (affects all users).
+- Export a JSON backup regularly from Settings.
 
 Built July 2026.

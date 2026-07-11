@@ -325,6 +325,12 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
     <!-- ============ SETTINGS ============ -->
     <div id="settings-tab" class="tab-content hidden">
       <div class="section">
+        <h2>👤 Account</h2>
+        <p id="account-email" style="font-size:14px;color:var(--muted);margin-bottom:12px;"></p>
+        <button class="btn btn-secondary" onclick="doLogout()">Sign out</button>
+        <p style="font-size:13px;color:var(--muted);margin-top:10px;">To add or remove team members, ask the administrator (Kaneez) — users are managed in the Supabase dashboard under Authentication.</p>
+      </div>
+      <div class="section">
         <h2>🔔 Reminders &amp; Notifications</h2>
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
           <button class="btn btn-primary" id="notify-btn" onclick="toggleNotifications()">Enable notifications</button>
@@ -338,8 +344,7 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
         <p style="font-size:13px;color:var(--muted);line-height:1.5;">
           With notifications enabled, you'll get an alert about overdue and due-soon bills every time the app opens,
           on this device — including on your phone once the app is installed to your home screen.
-          <strong>Fully automatic push notifications while the app is closed, and one shared set of data across
-          all users, are the next upgrade — they need a small online backend.</strong>
+          <strong>Data is shared live: when anyone on the team adds a bill or payment, everyone sees it instantly.</strong>
         </p>
       </div>
       <div class="section">
@@ -350,11 +355,11 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
           <button class="btn btn-secondary" onclick="loadDemoData()">✨ Load demo data</button>
           <button class="btn btn-danger" onclick="clearAllData()">🗑 Clear all data</button>
         </div>
-        <p style="font-size:13px;color:var(--muted);margin-top:10px;">Export a backup regularly. Data is stored in this browser on this device.</p>
+        <p style="font-size:13px;color:var(--muted);margin-top:10px;">Export a backup regularly. Data lives in the team's shared cloud database — importing or clearing affects everyone.</p>
       </div>
       <div class="section">
         <h2>ℹ️ About</h2>
-        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;">Caring Feathers Finance Hub — v1.0 (July 2026).<br>
+        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;">Caring Feathers Finance Hub — v2.0 (July 2026), with shared team data and live sync.<br>
         Starts with your homes and recurring bill schedules ready — just add amounts. Use “Load demo data” to explore the features with example figures.</p>
       </div>
     </div>
@@ -451,14 +456,116 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
   </form>
 </div></div>
 
+<!-- ============ LOGIN ============ -->
+<div id="login-screen" class="modal show" style="background:linear-gradient(135deg,#eff6ff,#eef2ff);">
+  <div class="modal-content" style="max-width:400px;text-align:center;">
+    <img src="icons/icon-192.png" alt="Caring Feathers" style="width:84px;height:84px;margin:0 auto 8px;">
+    <h2 style="color:var(--blue);margin-bottom:2px;">Caring Feathers</h2>
+    <p style="color:var(--muted);margin-bottom:20px;font-size:14px;">Finance Hub — team sign in</p>
+    <form onsubmit="doLogin(event)">
+      <div class="form-group" style="margin-bottom:12px;text-align:left;">
+        <label>Email</label><input type="email" id="login-email" required autocomplete="username">
+      </div>
+      <div class="form-group" style="margin-bottom:18px;text-align:left;">
+        <label>Password</label><input type="password" id="login-password" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;" id="login-btn">Sign in</button>
+      <p id="login-error" style="color:var(--red);font-size:13px;margin-top:10px;min-height:18px;"></p>
+    </form>
+  </div>
+</div>
+
 <div id="toast"></div>
 
+<script src="vendor/supabase.js"></script>
 <script>
 /* =================== State & storage =================== */
 let homes = [], bills = [], payments = [], settings = {};
 let editingBillId = null, editingHomeId = null;
 let calMonth = '';   // YYYY-MM shown on calendar
 const LS = { homes: 'cfx-homes', bills: 'cfx-bills', payments: 'cfx-payments', settings: 'cfx-settings' };
+
+/* =================== Shared cloud database =================== */
+const SUPA_URL = 'https://dsvcfegwiqdbabywxnod.supabase.co';
+const SUPA_KEY = 'sb_publishable_2peq2rE-7aAd3QTH1ESqzw_Vlt07Rlp';
+const db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// camelCase (app) <-> snake_case (database) mapping
+const homeToRow = h => ({ id: h.id, name: h.name, city: h.city || '', manager: h.manager || '', bank: h.bank || '', monthly_budget: +h.monthlyBudget || 0, active: h.active !== false });
+const rowToHome = r => ({ id: r.id, name: r.name, city: r.city || '', manager: r.manager || '', bank: r.bank || '', monthlyBudget: +r.monthly_budget || 0, active: r.active !== false });
+const billToRow = b => ({ id: b.id, home: b.home, category: b.category, vendor: b.vendor || '', bank_account: b.bankAccount || '', frequency: b.frequency || 'Monthly', amount: b.amount == null ? '' : String(b.amount), next_due_date: b.nextDueDate || '', reminder_days: b.reminderDays || 7, status: b.status || 'Pending', notes: b.notes || '' });
+const rowToBill = r => ({ id: r.id, home: r.home, category: r.category, vendor: r.vendor || '', bankAccount: r.bank_account || '', frequency: r.frequency || 'Monthly', amount: r.amount || '', nextDueDate: r.next_due_date || '', reminderDays: r.reminder_days || 7, status: r.status || 'Pending', notes: r.notes || '' });
+const payToRow = p => ({ id: p.id, bill_id: p.billId || '', home: p.home || '', category: p.category || '', paid_date: p.paidDate || '', amount: p.amount == null ? '' : String(p.amount), method: p.method || '', notes: p.notes || '' });
+const rowToPay = r => ({ id: r.id, billId: r.bill_id || '', home: r.home || '', category: r.category || '', paidDate: r.paid_date || '', amount: r.amount || '', method: r.method || '', notes: r.notes || '' });
+const TABLE_MAP = { homes: [homeToRow, rowToHome], bills: [billToRow, rowToBill], payments: [payToRow, rowToPay] };
+
+function dbUpsert(table, obj) {
+  db.from(table).upsert(TABLE_MAP[table][0](obj)).then(({ error }) => { if (error) toast('⚠ Sync failed: ' + error.message); });
+}
+function dbUpsertMany(table, objs) {
+  if (!objs.length) return Promise.resolve();
+  return db.from(table).upsert(objs.map(TABLE_MAP[table][0])).then(({ error }) => { if (error) toast('⚠ Sync failed: ' + error.message); });
+}
+function dbDelete(table, id) {
+  db.from(table).delete().eq('id', id).then(({ error }) => { if (error) toast('⚠ Sync failed: ' + error.message); });
+}
+async function dbClearAll() {
+  for (const t of ['payments', 'bills', 'homes']) {
+    const { error } = await db.from(t).delete().neq('id', '');
+    if (error) toast('⚠ ' + error.message);
+  }
+}
+async function fetchAll() {
+  const [h, b, p] = await Promise.all([
+    db.from('homes').select('*'), db.from('bills').select('*'), db.from('payments').select('*')
+  ]);
+  if (h.error || b.error || p.error) throw (h.error || b.error || p.error);
+  homes = h.data.map(rowToHome); bills = b.data.map(rowToBill); payments = p.data.map(rowToPay);
+  saveData();
+}
+
+function applyChange(table, payload) {
+  const conv = TABLE_MAP[table][1];
+  const get = () => table === 'homes' ? homes : table === 'bills' ? bills : payments;
+  const set = a => { if (table === 'homes') homes = a; else if (table === 'bills') bills = a; else payments = a; };
+  if (payload.eventType === 'DELETE') {
+    set(get().filter(x => x.id !== (payload.old && payload.old.id)));
+  } else {
+    const obj = conv(payload.new);
+    const arr = get(); const i = arr.findIndex(x => x.id === obj.id);
+    if (i >= 0) arr[i] = obj; else arr.push(obj);
+  }
+  saveData(); updateHomeFilters(); refreshAll();
+}
+function subscribeRealtime() {
+  db.channel('cf-live')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'homes' }, p => applyChange('homes', p))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'bills' }, p => applyChange('bills', p))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, p => applyChange('payments', p))
+    .subscribe();
+}
+
+/* =================== Auth =================== */
+async function doLogin(e) {
+  e.preventDefault();
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  const { error } = await db.auth.signInWithPassword({
+    email: document.getElementById('login-email').value.trim(),
+    password: document.getElementById('login-password').value
+  });
+  btn.disabled = false; btn.textContent = 'Sign in';
+  if (error) {
+    document.getElementById('login-error').textContent =
+      /invalid/i.test(error.message) ? 'Wrong email or password — try again' : error.message;
+    return;
+  }
+  document.getElementById('login-error').textContent = '';
+  startApp();
+}
+function doLogout() {
+  db.auth.signOut().finally(() => location.reload());
+}
 
 /* =================== Helpers =================== */
 function todayISO() { return new Date().toISOString().split('T')[0]; }
@@ -526,22 +633,24 @@ function seedData(demo) {
     addBill(h, 'Ofsted Fees', bank, 'Annual', demo ? 2231 : null, '2027-04-01', 30);
   });
   saveData();
+  dbUpsertMany('homes', homes); dbUpsertMany('bills', bills); dbUpsertMany('payments', payments);
 }
-function loadDemoData() {
-  if (!confirm('Load demo data? This REPLACES everything currently in the app with example bills and payments (for exploring or showing the features).')) return;
+async function loadDemoData() {
+  if (!confirm('Load demo data? This REPLACES everything currently in the app — FOR EVERYONE on the team — with example bills and payments.')) return;
+  toast('Loading demo data…');
+  await dbClearAll();
   seedData(true);
   updateHomeFilters(); updateMonthFilters(); refreshAll();
   toast('Demo data loaded — use "Clear all data" to start fresh');
 }
 function loadData() {
+  // local cache = instant view + offline fallback; the cloud is the source of truth
   try {
-    homes = JSON.parse(localStorage.getItem(LS.homes)) || null;
-    bills = JSON.parse(localStorage.getItem(LS.bills)) || null;
-    payments = JSON.parse(localStorage.getItem(LS.payments)) || null;
+    homes = JSON.parse(localStorage.getItem(LS.homes)) || [];
+    bills = JSON.parse(localStorage.getItem(LS.bills)) || [];
+    payments = JSON.parse(localStorage.getItem(LS.payments)) || [];
     settings = JSON.parse(localStorage.getItem(LS.settings)) || {};
-  } catch (e) { homes = bills = payments = null; settings = {}; }
-  if (!homes || !bills) seedData(false);
-  if (!payments) payments = [];
+  } catch (e) { homes = []; bills = []; payments = []; settings = {}; }
   if (settings.defaultReminderDays == null) settings.defaultReminderDays = 7;
 }
 function saveData() {
@@ -745,17 +854,22 @@ function saveBill(e) {
     reminderDays: parseInt(document.getElementById('bill-reminder').value) || 7,
     notes: document.getElementById('bill-notes').value
   };
+  let saved;
   if (editingBillId) {
     const i = bills.findIndex(b => b.id === editingBillId);
     bills[i] = { ...bills[i], ...data };
-  } else bills.push({ ...data, id: nextId('B', bills, 4), status: 'Pending' });
-  saveData(); closeModal('bill-modal');
+    saved = bills[i];
+  } else {
+    saved = { ...data, id: nextId('B', bills, 4), status: 'Pending' };
+    bills.push(saved);
+  }
+  saveData(); dbUpsert('bills', saved); closeModal('bill-modal');
   refreshAll(); toast(editingBillId ? 'Bill updated' : 'Bill added');
 }
 function deleteBill(id) {
   if (!confirm('Delete this bill?')) return;
   bills = bills.filter(b => b.id !== id);
-  saveData(); refreshAll(); toast('Bill deleted');
+  saveData(); dbDelete('bills', id); refreshAll(); toast('Bill deleted');
 }
 
 /* ---- Mark paid + auto-recurrence ---- */
@@ -775,18 +889,22 @@ function confirmMarkPaid(e) {
   b.status = 'Paid';
   const paidAmt = document.getElementById('pay-amount').value;
   if (paidAmt && !b.amount) b.amount = paidAmt;
-  payments.push({
+  const pay = {
     id: nextId('P', payments, 4), billId: id, home: b.home, category: b.category,
     paidDate: document.getElementById('pay-date').value, amount: paidAmt,
     method: document.getElementById('pay-method').value, notes: ''
-  });
+  };
+  payments.push(pay);
+  dbUpsert('bills', b); dbUpsert('payments', pay);
   // Auto-schedule next occurrence for recurring bills
   let msg = 'Payment recorded ✓';
   const nextDate = b.nextDueDate ? addFrequency(b.nextDueDate, b.frequency) : '';
   if (nextDate) {
     const exists = bills.some(x => x.home === b.home && x.category === b.category && x.nextDueDate === nextDate);
     if (!exists) {
-      bills.push({ ...b, id: nextId('B', bills, 4), nextDueDate: nextDate, status: 'Pending', amount: b.amount });
+      const nextBill = { ...b, id: nextId('B', bills, 4), nextDueDate: nextDate, status: 'Pending', amount: b.amount };
+      bills.push(nextBill);
+      dbUpsert('bills', nextBill);
       msg = `Paid ✓ — next ${b.category} scheduled for ${nextDate}`;
     }
   }
@@ -830,21 +948,23 @@ function fillPaymentFromBill() {
 function savePayment(e) {
   e.preventDefault();
   const billId = document.getElementById('payment-bill').value;
-  payments.push({
+  const pay = {
     id: nextId('P', payments, 4), billId,
     home: document.getElementById('payment-home').value,
     category: document.getElementById('payment-category').value,
     paidDate: document.getElementById('payment-date').value,
     amount: document.getElementById('payment-amount').value,
     method: document.getElementById('payment-method').value, notes: ''
-  });
-  if (billId) { const b = bills.find(x => x.id === billId); if (b) b.status = 'Paid'; }
+  };
+  payments.push(pay);
+  dbUpsert('payments', pay);
+  if (billId) { const b = bills.find(x => x.id === billId); if (b) { b.status = 'Paid'; dbUpsert('bills', b); } }
   saveData(); closeModal('payment-modal'); refreshAll(); toast('Payment recorded ✓');
 }
 function deletePayment(id) {
   if (!confirm('Delete this payment?')) return;
   payments = payments.filter(p => p.id !== id);
-  saveData(); refreshAll(); toast('Payment deleted');
+  saveData(); dbDelete('payments', id); refreshAll(); toast('Payment deleted');
 }
 function exportPaymentsCSV() {
   const fMonth = document.getElementById('filter-payment-month').value;
@@ -1044,14 +1164,15 @@ function saveHome(e) {
     monthlyBudget: parseFloat(document.getElementById('home-budget').value) || 0,
     active: true
   };
-  if (editingHomeId) { const i = homes.findIndex(h => h.id === editingHomeId); homes[i] = { ...homes[i], ...data }; }
-  else homes.push({ ...data, id: nextId('H', homes, 3) });
-  saveData(); closeModal('home-modal'); updateHomeFilters(); refreshAll(); toast('Home saved');
+  let saved;
+  if (editingHomeId) { const i = homes.findIndex(h => h.id === editingHomeId); homes[i] = { ...homes[i], ...data }; saved = homes[i]; }
+  else { saved = { ...data, id: nextId('H', homes, 3) }; homes.push(saved); }
+  saveData(); dbUpsert('homes', saved); closeModal('home-modal'); updateHomeFilters(); refreshAll(); toast('Home saved');
 }
 function deleteHome(id) {
   if (!confirm('Delete this home? Its bills stay in the list.')) return;
   homes = homes.filter(h => h.id !== id);
-  saveData(); updateHomeFilters(); refreshAll(); toast('Home deleted');
+  saveData(); dbDelete('homes', id); updateHomeFilters(); refreshAll(); toast('Home deleted');
 }
 
 /* =================== Settings / notifications / backup =================== */
@@ -1098,22 +1219,27 @@ function importBackup(ev) {
   const file = ev.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = () => {
+  reader.onload = async () => {
     try {
       const data = JSON.parse(reader.result);
       if (!Array.isArray(data.bills) || !Array.isArray(data.homes)) throw new Error('Not a valid backup');
-      if (!confirm(`Import backup from ${data.exported || 'unknown date'}? This replaces current data.`)) return;
+      if (!confirm(`Import backup from ${data.exported || 'unknown date'}? This replaces the shared data for EVERYONE on the team.`)) return;
+      toast('Importing…');
+      await dbClearAll();
       homes = data.homes; bills = data.bills; payments = data.payments || []; settings = data.settings || settings;
+      await dbUpsertMany('homes', homes); await dbUpsertMany('bills', bills); await dbUpsertMany('payments', payments);
       saveData(); updateHomeFilters(); updateMonthFilters(); refreshAll(); refreshNotifyUI();
-      toast('Backup imported ✓');
+      toast('Backup imported ✓ — now shared with the team');
     } catch (err) { alert('Could not import: ' + err.message); }
   };
   reader.readAsText(file);
   ev.target.value = '';
 }
-function clearAllData() {
-  if (!confirm('Delete ALL bills, payments and homes on this device?')) return;
+async function clearAllData() {
+  if (!confirm('Delete ALL bills, payments and homes — for EVERYONE on the team?')) return;
   if (!confirm('Are you absolutely sure? Consider exporting a backup first.')) return;
+  toast('Clearing…');
+  await dbClearAll();
   Object.values(LS).forEach(k => localStorage.removeItem(k));
   location.reload();
 }
@@ -1127,16 +1253,36 @@ function refreshAll() {
   if (!document.getElementById('reports-tab').classList.contains('hidden')) renderReports();
   if (!document.getElementById('homes-tab').classList.contains('hidden')) renderHomes();
 }
-function init() {
+async function init() {
   loadData();
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+  const { data: { session } } = await db.auth.getSession();
+  if (session) startApp();      // else the login screen stays up
+}
+async function startApp() {
+  document.getElementById('login-screen').classList.remove('show');
+  let cloudOK = false;
+  try { await fetchAll(); cloudOK = true; }
+  catch (err) {
+    if (err && (err.code === '42P01' || /does not exist|schema cache/i.test(err.message || ''))) {
+      alert('The shared database is not set up yet.\n\nOpen Supabase -> SQL Editor, paste the setup script, click Run, then reload this page.');
+      return;
+    }
+    toast('⚠ Offline — showing the last saved copy');
+  }
+  if (cloudOK && !homes.length) seedData(false);
+  db.auth.getUser().then(({ data }) => {
+    const el = document.getElementById('account-email');
+    if (el && data && data.user) el.textContent = 'Signed in as ' + data.user.email;
+  });
   updateHomeFilters();
   updateMonthFilters();
   document.getElementById('setting-reminder').value = settings.defaultReminderDays || 7;
   renderDashboard(); renderBills(); renderPayments(); renderHomes(); refreshNotifyUI();
   setTimeout(notifyDueBills, 1500);
-  if ('serviceWorker' in navigator && location.protocol === 'https:') {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  }
+  if (cloudOK) subscribeRealtime();
 }
 window.onload = init;
 </script>
