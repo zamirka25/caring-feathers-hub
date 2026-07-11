@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Caring Feathers — Finance Hub</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2563eb">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Caring Feathers">
+<style>
+:root {
+  --blue: #2563eb; --blue-dark: #1d4ed8; --blue-light: #dbeafe;
+  --red: #dc2626; --red-light: #fee2e2;
+  --orange: #f59e0b; --orange-light: #fef3c7;
+  --green: #16a34a; --green-light: #dcfce7;
+  --purple: #7c3aed; --purple-light: #ede9fe;
+  --gray: #6b7280; --gray-light: #f3f4f6;
+  --bg: #f4f6fa; --card: #ffffff; --text: #1f2937; --muted: #6b7280;
+  --radius: 14px; --shadow: 0 1px 3px rgba(16,24,40,.08), 0 1px 2px rgba(16,24,40,.04);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); }
+button { font-family: inherit; }
+
+/* ===== Header ===== */
+.header { background: var(--card); border-bottom: 1px solid #e5e7eb; padding: 12px 20px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 50; }
+.header img { width: 44px; height: 38px; object-fit: contain; }
+.header h1 { font-size: 19px; color: var(--blue); line-height: 1.1; }
+.header p { font-size: 12px; color: var(--muted); }
+.header .spacer { flex: 1; }
+.bell-btn { background: var(--gray-light); border: none; border-radius: 10px; padding: 8px 12px; cursor: pointer; font-size: 16px; position: relative; }
+.bell-badge { position: absolute; top: -4px; right: -4px; background: var(--red); color: white; border-radius: 50%; min-width: 18px; height: 18px; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; padding: 0 3px; }
+
+/* ===== Layout ===== */
+.layout { display: flex; min-height: calc(100vh - 63px); }
+.sidebar { width: 210px; background: var(--card); border-right: 1px solid #e5e7eb; padding: 16px 10px; flex-shrink: 0; }
+.nav-link { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-radius: 10px; color: var(--muted); cursor: pointer; font-size: 14.5px; font-weight: 500; margin-bottom: 3px; border: none; background: none; width: 100%; text-align: left; }
+.nav-link:hover { background: var(--gray-light); color: var(--text); }
+.nav-link.active { background: var(--blue-light); color: var(--blue); font-weight: 700; }
+.main { flex: 1; padding: 22px; max-width: 1150px; margin: 0 auto; width: 100%; }
+
+/* Mobile bottom nav */
+.bottom-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); border-top: 1px solid #e5e7eb; z-index: 60; padding: 4px 2px calc(4px + env(safe-area-inset-bottom)); }
+.bottom-nav .nav-link { flex-direction: column; gap: 2px; font-size: 10px; padding: 6px 2px; margin: 0; flex: 1; align-items: center; border-radius: 8px; }
+.bottom-nav .nav-icon { font-size: 19px; }
+@media (max-width: 820px) {
+  .sidebar { display: none; }
+  .bottom-nav { display: flex; }
+  .main { padding: 14px 12px 90px; }
+}
+
+/* ===== Cards & stats ===== */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.stat-card { background: var(--card); padding: 16px; border-radius: var(--radius); box-shadow: var(--shadow); }
+.stat-card h3 { color: var(--muted); font-size: 12.5px; margin-bottom: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: .3px; }
+.stat-card .number { font-size: 26px; font-weight: 800; }
+.stat-card .sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.stat-card.red .number { color: var(--red); } .stat-card.orange .number { color: var(--orange); }
+.stat-card.blue .number { color: var(--blue); } .stat-card.green .number { color: var(--green); }
+.stat-card.purple .number { color: var(--purple); }
+.section { background: var(--card); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); margin-bottom: 18px; }
+.section h2 { margin-bottom: 14px; font-size: 17px; }
+.section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
+.section-head h2 { margin-bottom: 0; }
+
+/* ===== Buttons, badges, forms ===== */
+button.btn { padding: 9px 16px; border: none; border-radius: 9px; cursor: pointer; font-size: 14px; font-weight: 600; }
+.btn-primary { background: var(--blue); color: white; } .btn-primary:hover { background: var(--blue-dark); }
+.btn-secondary { background: var(--gray-light); color: var(--text); }
+.btn-danger { background: var(--red); color: white; }
+.btn-success { background: var(--green); color: white; }
+.btn-ghost { background: none; color: var(--blue); }
+.action-btn { padding: 5px 9px; font-size: 12px; }
+.badge { padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.badge.red { background: var(--red-light); color: var(--red); }
+.badge.orange { background: var(--orange-light); color: #b45309; }
+.badge.blue { background: var(--blue-light); color: var(--blue); }
+.badge.green { background: var(--green-light); color: var(--green); }
+.badge.gray { background: var(--gray-light); color: var(--gray); }
+.filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.filters select, .filters input { padding: 9px 12px; border: 1px solid #d1d5db; border-radius: 9px; font-size: 14px; background: white; min-width: 130px; flex: 1; }
+.filters .btn { flex-shrink: 0; }
+.summary-bar { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: center; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 11px 14px; margin-bottom: 14px; font-size: 13.5px; }
+.summary-bar strong { font-size: 15.5px; }
+table { width: 100%; border-collapse: collapse; }
+th { background: #f8f9fb; text-align: left; padding: 10px 12px; font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .3px; }
+td { padding: 10px 12px; border-bottom: 1px solid #eef0f3; font-size: 14px; }
+tr:hover td { background: #f8f9fb; }
+tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-top: 2px solid #c7d2fe; font-size: 13px; }
+.table-wrap { overflow-x: auto; }
+.actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ===== Modal ===== */
+.modal { display: none; position: fixed; inset: 0; background: rgba(15,23,42,.5); z-index: 100; }
+.modal.show { display: flex; align-items: center; justify-content: center; padding: 14px; }
+.modal-content { background: white; padding: 24px; border-radius: 16px; max-width: 620px; width: 100%; max-height: 92vh; overflow-y: auto; }
+.modal-content h2 { margin-bottom: 16px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin-bottom: 18px; }
+@media (max-width: 540px) { .form-grid { grid-template-columns: 1fr; } }
+.form-group { display: flex; flex-direction: column; }
+.form-group.full { grid-column: 1 / -1; }
+.form-group label { margin-bottom: 5px; font-size: 13px; font-weight: 600; }
+.form-group input, .form-group select, .form-group textarea { padding: 9px 11px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; font-family: inherit; }
+.form-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.hidden { display: none !important; }
+
+/* ===== Dashboard extras ===== */
+.hero { background: linear-gradient(120deg, #2563eb, #4f46e5); border-radius: var(--radius); color: white; padding: 20px 22px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+.hero h2 { font-size: 21px; margin-bottom: 4px; }
+.hero p { opacity: .85; font-size: 13.5px; }
+.alert-banner { background: var(--red-light); border: 1px solid #fecaca; color: #991b1b; border-radius: 10px; padding: 12px 15px; margin-bottom: 16px; font-size: 14px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.up-item { padding: 12px 14px; background: #f8f9fb; border-radius: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.up-item .due { font-weight: 700; font-size: 13.5px; }
+.outlook-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.outlook-row .lbl { width: 110px; font-size: 13px; color: var(--muted); flex-shrink: 0; }
+.outlook-row .bar-track { flex: 1; background: var(--gray-light); border-radius: 8px; height: 26px; position: relative; overflow: hidden; }
+.outlook-row .bar-fill { height: 100%; border-radius: 8px; background: var(--blue); min-width: 2px; }
+.outlook-row .val { width: 90px; text-align: right; font-weight: 700; font-size: 13.5px; flex-shrink: 0; }
+
+/* ===== Calendar ===== */
+.cal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+.cal-title { font-size: 18px; font-weight: 800; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.cal-dow { text-align: center; font-size: 11px; font-weight: 700; color: var(--muted); padding: 4px 0; text-transform: uppercase; }
+.cal-day { background: #f8f9fb; border-radius: 9px; min-height: 76px; padding: 5px; font-size: 12px; border: 1.5px solid transparent; cursor: pointer; }
+.cal-day:hover { border-color: var(--blue); }
+.cal-day.other { opacity: .35; }
+.cal-day.today { border-color: var(--blue); background: var(--blue-light); }
+.cal-day .dnum { font-weight: 700; font-size: 12px; margin-bottom: 3px; }
+.cal-chip { border-radius: 5px; padding: 1.5px 5px; font-size: 10px; font-weight: 600; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cal-chip.red { background: var(--red-light); color: var(--red); }
+.cal-chip.blue { background: var(--blue-light); color: var(--blue); }
+.cal-chip.green { background: var(--green-light); color: var(--green); }
+@media (max-width: 640px) { .cal-day { min-height: 58px; } .cal-chip { font-size: 8.5px; } }
+
+/* ===== Reports ===== */
+.bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+.bar-row .lbl { width: 130px; font-size: 13px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-row .track { flex: 1; background: var(--gray-light); border-radius: 7px; height: 22px; overflow: hidden; }
+.bar-row .fill { height: 100%; border-radius: 7px; min-width: 2px; }
+.bar-row .val { width: 85px; text-align: right; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+.budget-row { margin-bottom: 14px; }
+.budget-row .top { display: flex; justify-content: space-between; font-size: 13.5px; margin-bottom: 5px; }
+.progress { background: var(--gray-light); border-radius: 8px; height: 12px; overflow: hidden; }
+.progress .p-fill { height: 100%; border-radius: 8px; }
+.trend-wrap { display: flex; align-items: flex-end; gap: 6px; height: 140px; padding-top: 10px; }
+.trend-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+.trend-bar { width: 100%; max-width: 42px; background: var(--blue); border-radius: 6px 6px 0 0; min-height: 2px; }
+.trend-col .t-lbl { font-size: 10px; color: var(--muted); }
+.trend-col .t-val { font-size: 9.5px; color: var(--muted); font-weight: 600; }
+
+/* ===== Homes ===== */
+.home-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.home-card { background: var(--card); padding: 18px; border-radius: var(--radius); box-shadow: var(--shadow); }
+.home-card h3 { font-size: 17px; margin-bottom: 2px; }
+.home-meta { color: var(--muted); font-size: 13px; margin: 2px 0; }
+
+/* ===== Toast ===== */
+#toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: #1f2937; color: white; padding: 11px 20px; border-radius: 10px; font-size: 14px; z-index: 200; opacity: 0; transition: opacity .25s; pointer-events: none; max-width: 90vw; text-align: center; }
+#toast.show { opacity: 1; }
+
+/* ===== Print (management report) ===== */
+@media print {
+  .header, .sidebar, .bottom-nav, .no-print, .filters { display: none !important; }
+  .main { padding: 0; max-width: none; }
+  .tab-content { display: none !important; }
+  #reports-tab { display: block !important; }
+  .section { box-shadow: none; border: 1px solid #ddd; break-inside: avoid; }
+  body { background: white; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <img src="data:image/webp;base64,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" alt="Caring Feathers logo">
+  <div>
+    <h1>Caring Feathers</h1>
+    <p>Finance Hub — Bill &amp; Budget Manager</p>
+  </div>
+  <div class="spacer"></div>
+  <button class="bell-btn" onclick="showTab('dashboard')" title="Alerts">🔔<span class="bell-badge hidden" id="bell-badge">0</span></button>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <button class="nav-link active" data-tab="dashboard" onclick="showTab('dashboard')"><span class="nav-icon">🏠</span> Dashboard</button>
+    <button class="nav-link" data-tab="bills" onclick="showTab('bills')"><span class="nav-icon">📋</span> Bills</button>
+    <button class="nav-link" data-tab="calendar" onclick="showTab('calendar')"><span class="nav-icon">📅</span> Calendar</button>
+    <button class="nav-link" data-tab="payments" onclick="showTab('payments')"><span class="nav-icon">💳</span> Payments</button>
+    <button class="nav-link" data-tab="reports" onclick="showTab('reports')"><span class="nav-icon">📊</span> Reports</button>
+    <button class="nav-link" data-tab="homes" onclick="showTab('homes')"><span class="nav-icon">🏡</span> Homes</button>
+    <button class="nav-link" data-tab="settings" onclick="showTab('settings')"><span class="nav-icon">⚙️</span> Settings</button>
+  </div>
+
+  <div class="main">
+
+    <!-- ============ DASHBOARD ============ -->
+    <div id="dashboard-tab" class="tab-content">
+      <div class="hero">
+        <div>
+          <h2 id="hero-greeting">Welcome back 👋</h2>
+          <p id="hero-date"></p>
+        </div>
+        <button class="btn btn-secondary" style="background:rgba(255,255,255,.2);color:white;" onclick="showAddBillModal()">+ Add Bill</button>
+      </div>
+      <div id="alert-banner"></div>
+      <div class="stats">
+        <div class="stat-card red"><h3>Overdue</h3><div class="number" id="stat-overdue">0</div><div class="sub" id="stat-overdue-amt"></div></div>
+        <div class="stat-card orange"><h3>Due Next 7 Days</h3><div class="number" id="stat-due-soon">0</div><div class="sub" id="stat-due-soon-amt"></div></div>
+        <div class="stat-card blue"><h3 id="stat-month-due-label">Due This Month</h3><div class="number" id="stat-month-due">£0</div><div class="sub" id="stat-month-due-sub"></div></div>
+        <div class="stat-card green"><h3 id="stat-month-spent-label">Spent This Month</h3><div class="number" id="stat-month-spent">£0</div><div class="sub" id="stat-month-spent-sub"></div></div>
+      </div>
+      <div class="section">
+        <div class="section-head"><h2>⏰ Coming Up (next 14 days)</h2><button class="btn btn-ghost" onclick="showTab('bills')">View all →</button></div>
+        <div id="upcoming-bills"></div>
+      </div>
+      <div class="section">
+        <h2>📈 3-Month Outlook — what's due</h2>
+        <div id="outlook"></div>
+        <p style="font-size:12px;color:var(--muted);margin-top:6px;">Projected from scheduled bills. Open Reports for full breakdowns.</p>
+      </div>
+    </div>
+
+    <!-- ============ BILLS ============ -->
+    <div id="bills-tab" class="tab-content hidden">
+      <div class="section">
+        <div class="section-head"><h2>📋 Bills</h2><button class="btn btn-primary" onclick="showAddBillModal()">+ Add Bill</button></div>
+        <div class="filters">
+          <input type="search" id="filter-search" placeholder="🔍 Search bills…" oninput="renderBills()">
+          <select id="filter-month" onchange="renderBills()"><option value="All">All Months</option></select>
+          <select id="filter-home" onchange="renderBills()"><option value="All">All Homes</option></select>
+          <select id="filter-status" onchange="renderBills()">
+            <option value="All">All Status</option><option value="Overdue">Overdue</option>
+            <option value="Pending">Pending</option><option value="Paid">Paid</option>
+          </select>
+        </div>
+        <div class="summary-bar" id="bills-summary"></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Home</th><th>Category</th><th>Bank</th><th>Frequency</th><th>Amount</th><th>Due Date</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="bills-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ CALENDAR ============ -->
+    <div id="calendar-tab" class="tab-content hidden">
+      <div class="section">
+        <div class="cal-head">
+          <div class="cal-title" id="cal-title"></div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-secondary" onclick="calMove(-1)">◀</button>
+            <button class="btn btn-secondary" onclick="calToday()">Today</button>
+            <button class="btn btn-secondary" onclick="calMove(1)">▶</button>
+          </div>
+        </div>
+        <div class="summary-bar" id="cal-summary"></div>
+        <div class="cal-grid" id="cal-grid"></div>
+        <div id="cal-day-detail" style="margin-top:14px;"></div>
+      </div>
+    </div>
+
+    <!-- ============ PAYMENTS ============ -->
+    <div id="payments-tab" class="tab-content hidden">
+      <div class="section">
+        <div class="section-head"><h2>💳 Payment History</h2>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-secondary" onclick="exportPaymentsCSV()">⬇ Export CSV</button>
+            <button class="btn btn-primary" onclick="showAddPaymentModal()">+ Add Payment</button>
+          </div>
+        </div>
+        <div class="filters">
+          <select id="filter-payment-month" onchange="renderPayments()"><option value="All">All Months</option></select>
+          <select id="filter-payment-home" onchange="renderPayments()"><option value="All">All Homes</option></select>
+        </div>
+        <div class="summary-bar" id="payments-summary"></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>Home</th><th>Category</th><th>Amount</th><th>Method</th><th>Actions</th></tr></thead>
+            <tbody id="payments-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ REPORTS ============ -->
+    <div id="reports-tab" class="tab-content hidden">
+      <div class="section no-print">
+        <div class="section-head"><h2>📊 Management Report</h2>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <input type="month" id="report-month" onchange="renderReports()" style="padding:8px 11px;border:1px solid #d1d5db;border-radius:9px;font-size:14px;">
+            <button class="btn btn-secondary" onclick="copyReportSummary()">📋 Copy Summary</button>
+            <button class="btn btn-secondary" onclick="window.print()">🖨 Print / PDF</button>
+            <button class="btn btn-secondary" onclick="exportReportCSV()">⬇ CSV</button>
+          </div>
+        </div>
+        <p style="font-size:13px;color:var(--muted);">Pick a month, then print to PDF or copy a text summary to share with management on WhatsApp / email.</p>
+      </div>
+      <div class="section" id="report-header-print" style="display:none;"></div>
+      <div class="stats">
+        <div class="stat-card blue"><h3>Billed</h3><div class="number" id="rep-billed">£0</div><div class="sub" id="rep-billed-sub"></div></div>
+        <div class="stat-card green"><h3>Paid</h3><div class="number" id="rep-paid">£0</div><div class="sub" id="rep-paid-sub"></div></div>
+        <div class="stat-card red"><h3>Outstanding</h3><div class="number" id="rep-outstanding">£0</div><div class="sub" id="rep-outstanding-sub"></div></div>
+        <div class="stat-card purple"><h3>vs Previous Month</h3><div class="number" id="rep-vs">—</div><div class="sub" id="rep-vs-sub"></div></div>
+      </div>
+      <div class="section"><h2>🏡 Spend by Home</h2><div id="rep-by-home"></div></div>
+      <div class="section"><h2>🧾 Spend by Category</h2><div id="rep-by-category"></div></div>
+      <div class="section"><h2>🎯 Budget vs Actual (per home)</h2><div id="rep-budget"></div>
+        <p style="font-size:12px;color:var(--muted);margin-top:8px;">Set each home's monthly budget in the Homes tab.</p></div>
+      <div class="section"><h2>📈 12-Month Spending Trend</h2><div class="trend-wrap" id="rep-trend"></div></div>
+    </div>
+
+    <!-- ============ HOMES ============ -->
+    <div id="homes-tab" class="tab-content hidden">
+      <div class="section-head"><h2>🏡 Managed Homes</h2><button class="btn btn-primary" onclick="showAddHomeModal()">+ Add Home</button></div>
+      <div class="home-grid" id="homes-grid"></div>
+    </div>
+
+    <!-- ============ SETTINGS ============ -->
+    <div id="settings-tab" class="tab-content hidden">
+      <div class="section">
+        <h2>🔔 Reminders &amp; Notifications</h2>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;">
+          <button class="btn btn-primary" id="notify-btn" onclick="toggleNotifications()">Enable notifications</button>
+          <button class="btn btn-secondary" onclick="testNotification()">Send test</button>
+          <span id="notify-status" style="font-size:13px;color:var(--muted);"></span>
+        </div>
+        <div class="form-group" style="max-width:280px;margin-bottom:12px;">
+          <label>Default reminder (days before due date)</label>
+          <input type="number" id="setting-reminder" min="1" max="60" onchange="saveSettings()">
+        </div>
+        <p style="font-size:13px;color:var(--muted);line-height:1.5;">
+          With notifications enabled, you'll get an alert about overdue and due-soon bills every time the app opens,
+          on this device — including on your phone once the app is installed to your home screen.
+          <strong>Fully automatic push notifications while the app is closed, and one shared set of data across
+          all users, are the next upgrade — they need a small online backend.</strong>
+        </p>
+      </div>
+      <div class="section">
+        <h2>💾 Backup &amp; Data</h2>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-secondary" onclick="exportBackup()">⬇ Export backup (JSON)</button>
+          <label class="btn btn-secondary" style="cursor:pointer;">⬆ Import backup<input type="file" accept=".json" style="display:none;" onchange="importBackup(event)"></label>
+          <button class="btn btn-secondary" onclick="loadDemoData()">✨ Load demo data</button>
+          <button class="btn btn-danger" onclick="clearAllData()">🗑 Clear all data</button>
+        </div>
+        <p style="font-size:13px;color:var(--muted);margin-top:10px;">Export a backup regularly. Data is stored in this browser on this device.</p>
+      </div>
+      <div class="section">
+        <h2>ℹ️ About</h2>
+        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;">Caring Feathers Finance Hub — v1.0 (July 2026).<br>
+        Starts with your homes and recurring bill schedules ready — just add amounts. Use “Load demo data” to explore the features with example figures.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Mobile bottom nav -->
+<div class="bottom-nav">
+  <button class="nav-link active" data-tab="dashboard" onclick="showTab('dashboard')"><span class="nav-icon">🏠</span>Home</button>
+  <button class="nav-link" data-tab="bills" onclick="showTab('bills')"><span class="nav-icon">📋</span>Bills</button>
+  <button class="nav-link" data-tab="calendar" onclick="showTab('calendar')"><span class="nav-icon">📅</span>Calendar</button>
+  <button class="nav-link" data-tab="payments" onclick="showTab('payments')"><span class="nav-icon">💳</span>Pay</button>
+  <button class="nav-link" data-tab="reports" onclick="showTab('reports')"><span class="nav-icon">📊</span>Reports</button>
+  <button class="nav-link" data-tab="homes" onclick="showTab('homes')"><span class="nav-icon">🏡</span>Homes</button>
+  <button class="nav-link" data-tab="settings" onclick="showTab('settings')"><span class="nav-icon">⚙️</span>More</button>
+</div>
+
+<!-- ============ MODALS ============ -->
+<div id="bill-modal" class="modal"><div class="modal-content">
+  <h2 id="bill-modal-title">Add Bill</h2>
+  <form id="bill-form" onsubmit="saveBill(event)">
+    <div class="form-grid">
+      <div class="form-group"><label>Home *</label><select id="bill-home" required></select></div>
+      <div class="form-group"><label>Category *</label><input type="text" id="bill-category" list="category-list" required><datalist id="category-list">
+        <option>Petty Cash</option><option>Gas & Electric</option><option>Water</option><option>Internet</option><option>Council Tax</option><option>Rent</option><option>Ofsted Fees</option><option>Training Hub</option><option>Agency Fee</option><option>Insurance</option><option>Maintenance</option><option>Food Shopping</option><option>Payroll</option><option>Vehicle</option></datalist></div>
+      <div class="form-group"><label>Vendor</label><input type="text" id="bill-vendor"></div>
+      <div class="form-group"><label>Bank Account *</label><input type="text" id="bill-bank" list="bank-list" required><datalist id="bank-list"><option>Barclays</option><option>Monzo</option><option>Wise</option><option>Starling</option><option>Revolut</option></datalist></div>
+      <div class="form-group"><label>Frequency</label><select id="bill-frequency">
+        <option>Ad-hoc</option><option>Weekly</option><option>Every 4 Weeks</option><option selected>Monthly</option><option>Quarterly</option><option>Annual</option></select></div>
+      <div class="form-group"><label>Amount (£)</label><input type="number" id="bill-amount" step="0.01" min="0"></div>
+      <div class="form-group"><label>Next Due Date</label><input type="date" id="bill-due-date"></div>
+      <div class="form-group"><label>Reminder Days</label><input type="number" id="bill-reminder" value="7" min="1"></div>
+      <div class="form-group full"><label>Notes</label><input type="text" id="bill-notes" placeholder="Optional"></div>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" onclick="closeModal('bill-modal')">Cancel</button>
+      <button type="submit" class="btn btn-primary">Save Bill</button>
+    </div>
+  </form>
+</div></div>
+
+<div id="pay-modal" class="modal"><div class="modal-content">
+  <h2>Mark Bill as Paid</h2>
+  <p id="pay-modal-info" style="margin-bottom:14px;color:var(--muted);font-size:14px;"></p>
+  <form id="pay-form" onsubmit="confirmMarkPaid(event)">
+    <input type="hidden" id="pay-bill-id">
+    <div class="form-grid">
+      <div class="form-group"><label>Date Paid</label><input type="date" id="pay-date" required></div>
+      <div class="form-group"><label>Amount (£) *</label><input type="number" id="pay-amount" step="0.01" min="0" required></div>
+      <div class="form-group full"><label>Payment Method</label><select id="pay-method">
+        <option value="">Select Method</option><option>Bank Transfer</option><option>Card</option><option>Direct Debit</option><option>Cash</option></select></div>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" onclick="closeModal('pay-modal')">Cancel</button>
+      <button type="submit" class="btn btn-success">✓ Confirm Payment</button>
+    </div>
+  </form>
+</div></div>
+
+<div id="payment-modal" class="modal"><div class="modal-content">
+  <h2>Record Payment</h2>
+  <form id="payment-form" onsubmit="savePayment(event)">
+    <div class="form-grid">
+      <div class="form-group full"><label>Select Bill (Optional)</label><select id="payment-bill" onchange="fillPaymentFromBill()"><option value="">Manual Entry</option></select></div>
+      <div class="form-group"><label>Home</label><input type="text" id="payment-home"></div>
+      <div class="form-group"><label>Category</label><input type="text" id="payment-category"></div>
+      <div class="form-group"><label>Date</label><input type="date" id="payment-date" required></div>
+      <div class="form-group"><label>Amount (£)</label><input type="number" id="payment-amount" step="0.01" min="0" required></div>
+      <div class="form-group full"><label>Payment Method</label><select id="payment-method">
+        <option value="">Select Method</option><option>Bank Transfer</option><option>Card</option><option>Direct Debit</option><option>Cash</option></select></div>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" onclick="closeModal('payment-modal')">Cancel</button>
+      <button type="submit" class="btn btn-primary">Record Payment</button>
+    </div>
+  </form>
+</div></div>
+
+<div id="home-modal" class="modal"><div class="modal-content">
+  <h2 id="home-modal-title">Add Home</h2>
+  <form id="home-form" onsubmit="saveHome(event)">
+    <div class="form-grid">
+      <div class="form-group full"><label>Home Name *</label><input type="text" id="home-name" required></div>
+      <div class="form-group"><label>City</label><input type="text" id="home-city"></div>
+      <div class="form-group"><label>Manager</label><input type="text" id="home-manager"></div>
+      <div class="form-group"><label>Main Bank Account</label><input type="text" id="home-bank" list="bank-list"></div>
+      <div class="form-group"><label>Monthly Budget (£)</label><input type="number" id="home-budget" step="1" min="0" placeholder="e.g. 3000"></div>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" onclick="closeModal('home-modal')">Cancel</button>
+      <button type="submit" class="btn btn-primary">Save Home</button>
+    </div>
+  </form>
+</div></div>
+
+<div id="toast"></div>
+
+<script>
+/* =================== State & storage =================== */
+let homes = [], bills = [], payments = [], settings = {};
+let editingBillId = null, editingHomeId = null;
+let calMonth = '';   // YYYY-MM shown on calendar
+const LS = { homes: 'cfx-homes', bills: 'cfx-bills', payments: 'cfx-payments', settings: 'cfx-settings' };
+
+/* =================== Helpers =================== */
+function todayISO() { return new Date().toISOString().split('T')[0]; }
+function monthKey(d) { return d ? String(d).slice(0, 7) : ''; }
+function currentMonthKey() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+function monthLabel(key) { const [y, m] = key.split('-'); return new Date(+y, +m - 1, 1).toLocaleString('en-GB', { month: 'long', year: 'numeric' }); }
+function monthLabelShort(key) { const [y, m] = key.split('-'); return new Date(+y, +m - 1, 1).toLocaleString('en-GB', { month: 'short' }); }
+function money(n) { return '£' + (+n || 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function money0(n) { return '£' + Math.round(+n || 0).toLocaleString('en-GB'); }
+function amt(x) { return parseFloat(x) || 0; }
+function sumAmounts(list) { return list.reduce((s, x) => s + amt(x.amount), 0); }
+function nextId(prefix, list, width) { const max = list.reduce((m, x) => Math.max(m, parseInt(String(x.id).replace(/\D/g, '')) || 0), 0); return prefix + String(max + 1).padStart(width, '0'); }
+function daysUntil(dateStr) { const t = new Date(); t.setHours(0,0,0,0); return Math.ceil((new Date(dateStr) - t) / 86400000); }
+function shiftMonthKey(key, delta) { const [y, m] = key.split('-').map(Number); const d = new Date(y, m - 1 + delta, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+function addFrequency(dateStr, freq) {
+  const d = new Date(dateStr + 'T00:00:00');
+  if (freq === 'Weekly') d.setDate(d.getDate() + 7);
+  else if (freq === 'Every 4 Weeks') d.setDate(d.getDate() + 28);
+  else if (freq === 'Monthly') d.setMonth(d.getMonth() + 1);
+  else if (freq === 'Quarterly') d.setMonth(d.getMonth() + 3);
+  else if (freq === 'Annual') d.setFullYear(d.getFullYear() + 1);
+  else return '';
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function isOverdue(b) { return b.status === 'Pending' && b.nextDueDate && daysUntil(b.nextDueDate) < 0; }
+function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 3200); }
+function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* =================== Data seeding =================== */
+function seedData(demo) {
+  homes = [
+    { id: 'H001', name: 'Dove Lodge', city: 'Swindon', manager: '', bank: 'Monzo', monthlyBudget: 0, active: true },
+    { id: 'H002', name: 'Puffin Lodge', city: 'Burton', manager: '', bank: 'Barclays', monthlyBudget: 0, active: true },
+    { id: 'H003', name: 'Swan Lodge', city: '', manager: '', bank: 'Wise', monthlyBudget: 0, active: true }
+  ];
+  if (demo) homes.forEach(h => h.monthlyBudget = 3000);
+  bills = []; payments = [];
+  const today = todayISO();
+  let bn = 0, pn = 0;
+  const addBill = (home, cat, bank, freq, amount, due, reminderDays) => {
+    const past = due && due < today;
+    if (past && !demo) return;     // real mode: only current/future bills, start clean
+    const b = { id: 'B' + String(++bn).padStart(4, '0'), home, category: cat, vendor: '', bankAccount: bank,
+      frequency: freq, amount: amount == null ? '' : String(amount), nextDueDate: due, reminderDays: reminderDays || 7,
+      status: (demo && past) ? 'Paid' : 'Pending', notes: '' };
+    bills.push(b);
+    if (demo && past) payments.push({ id: 'P' + String(++pn).padStart(4, '0'), billId: b.id, home, category: cat,
+      paidDate: due, amount: String(amount), method: 'Bank Transfer', notes: 'Demo data' });
+  };
+  const homeDefs = [['Dove Lodge', 'Monzo'], ['Puffin Lodge', 'Barclays'], ['Swan Lodge', 'Wise']];
+  // Petty cash — every 4 weeks from 9 Mar 2026 (12 cycles, as in the original app)
+  const pcDates = ['2026-03-09','2026-04-06','2026-05-04','2026-06-01','2026-06-29','2026-07-27','2026-08-24','2026-09-21','2026-10-19','2026-11-16','2026-12-14','2027-01-11'];
+  homeDefs.forEach(([h, bank]) => pcDates.forEach(d => addBill(h, 'Petty Cash', bank, 'Every 4 Weeks', demo ? 250 : null, d, 7)));
+  // Monthly bills Mar–Dec 2026 (demo mode: gas varies by month for realistic charts)
+  const gasByMonth = { 3: 210, 4: 185, 5: 160, 6: 140, 7: 135, 8: 130, 9: 150, 10: 180, 11: 205, 12: 225 };
+  homeDefs.forEach(([h, bank], hi) => {
+    for (let m = 3; m <= 12; m++) {
+      const mm = String(m).padStart(2, '0');
+      addBill(h, 'Gas & Electric', bank, 'Monthly', demo ? gasByMonth[m] + hi * 12 : null, `2026-${mm}-15`, 7);
+      addBill(h, 'Internet', bank, 'Monthly', demo ? 45 : null, `2026-${mm}-20`, 7);
+      addBill(h, 'Agency Fee', bank, 'Monthly', demo ? 1150 + hi * 50 : null, `2026-${mm}-28`, 3);
+    }
+    addBill(h, 'Training Hub', bank, 'Quarterly', demo ? 300 : null, '2026-09-01', 14);
+    if (demo) addBill(h, 'Training Hub', bank, 'Quarterly', 300, '2026-06-01', 14);
+    addBill(h, 'Ofsted Fees', bank, 'Annual', demo ? 2231 : null, '2027-04-01', 30);
+  });
+  saveData();
+}
+function loadDemoData() {
+  if (!confirm('Load demo data? This REPLACES everything currently in the app with example bills and payments (for exploring or showing the features).')) return;
+  seedData(true);
+  updateHomeFilters(); updateMonthFilters(); refreshAll();
+  toast('Demo data loaded — use "Clear all data" to start fresh');
+}
+function loadData() {
+  try {
+    homes = JSON.parse(localStorage.getItem(LS.homes)) || null;
+    bills = JSON.parse(localStorage.getItem(LS.bills)) || null;
+    payments = JSON.parse(localStorage.getItem(LS.payments)) || null;
+    settings = JSON.parse(localStorage.getItem(LS.settings)) || {};
+  } catch (e) { homes = bills = payments = null; settings = {}; }
+  if (!homes || !bills) seedData(false);
+  if (!payments) payments = [];
+  if (settings.defaultReminderDays == null) settings.defaultReminderDays = 7;
+}
+function saveData() {
+  localStorage.setItem(LS.homes, JSON.stringify(homes));
+  localStorage.setItem(LS.bills, JSON.stringify(bills));
+  localStorage.setItem(LS.payments, JSON.stringify(payments));
+  localStorage.setItem(LS.settings, JSON.stringify(settings));
+}
+
+/* =================== Navigation =================== */
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+  document.getElementById(name + '-tab').classList.remove('hidden');
+  document.querySelectorAll('[data-tab]').forEach(n => n.classList.toggle('active', n.dataset.tab === name));
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'calendar') renderCalendar();
+  if (name === 'reports') renderReports();
+  if (name === 'homes') renderHomes();
+  window.scrollTo(0, 0);
+}
+
+/* =================== Dashboard =================== */
+function renderDashboard() {
+  const now = new Date();
+  const hour = now.getHours();
+  document.getElementById('hero-greeting').textContent = (hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening') + ' 👋';
+  document.getElementById('hero-date').textContent = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+  const pending = bills.filter(b => b.status === 'Pending');
+  const overdue = pending.filter(isOverdue);
+  const dueSoon = pending.filter(b => b.nextDueDate && daysUntil(b.nextDueDate) >= 0 && daysUntil(b.nextDueDate) <= 7);
+  const tm = currentMonthKey();
+  const monthBills = bills.filter(b => monthKey(b.nextDueDate) === tm);
+  const monthDue = sumAmounts(monthBills);
+  const monthPaidBills = sumAmounts(monthBills.filter(b => b.status === 'Paid'));
+  const monthSpent = payments.filter(p => monthKey(p.paidDate) === tm).reduce((s, p) => s + amt(p.amount), 0);
+
+  document.getElementById('stat-overdue').textContent = overdue.length;
+  document.getElementById('stat-overdue-amt').textContent = overdue.length ? money(sumAmounts(overdue)) + ' outstanding' : 'All clear ✓';
+  document.getElementById('stat-due-soon').textContent = dueSoon.length;
+  document.getElementById('stat-due-soon-amt').textContent = dueSoon.length ? money(sumAmounts(dueSoon)) : 'Nothing due soon';
+  document.getElementById('stat-month-due-label').textContent = 'Due in ' + monthLabel(tm);
+  document.getElementById('stat-month-due').textContent = money0(monthDue);
+  document.getElementById('stat-month-due-sub').textContent = monthBills.length + ' bills · ' + money0(monthDue - monthPaidBills) + ' still to pay';
+  document.getElementById('stat-month-spent-label').textContent = 'Spent in ' + monthLabel(tm);
+  document.getElementById('stat-month-spent').textContent = money0(monthSpent);
+  document.getElementById('stat-month-spent-sub').textContent = payments.filter(p => monthKey(p.paidDate) === tm).length + ' payments made';
+
+  // bell badge + alert banner
+  const badge = document.getElementById('bell-badge');
+  const alerts = overdue.length + dueSoon.length;
+  badge.classList.toggle('hidden', alerts === 0);
+  badge.textContent = alerts;
+  document.getElementById('alert-banner').innerHTML = overdue.length ?
+    `<div class="alert-banner" onclick="jumpToOverdue()">⚠️ <div><strong>${overdue.length} bill${overdue.length === 1 ? ' is' : 's are'} overdue</strong> (${money(sumAmounts(overdue))}). Tap to review.</div></div>` : '';
+
+  // upcoming 14 days (plus overdue at top)
+  const upcoming = pending.filter(b => b.nextDueDate && daysUntil(b.nextDueDate) <= 14)
+    .sort((a, b) => a.nextDueDate.localeCompare(b.nextDueDate)).slice(0, 8);
+  document.getElementById('upcoming-bills').innerHTML = upcoming.length === 0 ?
+    '<p style="color:var(--muted);font-size:14px;">Nothing due in the next 14 days 🎉</p>' :
+    upcoming.map(b => {
+      const d = daysUntil(b.nextDueDate);
+      const col = d < 0 ? 'var(--red)' : d <= 3 ? 'var(--orange)' : 'var(--blue)';
+      const when = d < 0 ? Math.abs(d) + 'd overdue' : d === 0 ? 'Due today' : 'in ' + d + 'd';
+      return `<div class="up-item"><div><strong>${esc(b.category)}</strong> ${b.amount ? '· ' + money(b.amount) : ''}<br>
+        <small style="color:var(--muted);">${esc(b.home)} · ${esc(b.bankAccount)} · ${b.nextDueDate}</small></div>
+        <div style="display:flex;align-items:center;gap:10px;"><span class="due" style="color:${col};">${when}</span>
+        <button class="btn btn-success action-btn" onclick="openPayModal('${b.id}')">✓ Pay</button></div></div>`;
+    }).join('');
+
+  // 3-month outlook
+  const keys = [tm, shiftMonthKey(tm, 1), shiftMonthKey(tm, 2)];
+  const vals = keys.map(k => sumAmounts(bills.filter(b => monthKey(b.nextDueDate) === k)));
+  const max = Math.max(...vals, 1);
+  document.getElementById('outlook').innerHTML = keys.map((k, i) =>
+    `<div class="outlook-row"><div class="lbl">${monthLabel(k)}</div>
+     <div class="bar-track"><div class="bar-fill" style="width:${Math.round(vals[i] / max * 100)}%;${i === 0 ? '' : 'opacity:.55;'}"></div></div>
+     <div class="val">${money0(vals[i])}</div></div>`).join('');
+}
+function jumpToOverdue() { showTab('bills'); document.getElementById('filter-status').value = 'Overdue'; document.getElementById('filter-month').value = 'All'; renderBills(); }
+
+/* =================== Bills =================== */
+function updateHomeFilters() {
+  const options = homes.filter(h => h.active).map(h => `<option value="${esc(h.name)}">${esc(h.name)}</option>`).join('');
+  document.getElementById('filter-home').innerHTML = '<option value="All">All Homes</option>' + options;
+  document.getElementById('filter-payment-home').innerHTML = '<option value="All">All Homes</option>' + options;
+  document.getElementById('bill-home').innerHTML = '<option value="">Select Home</option>' + options;
+}
+function updateMonthFilters() {
+  const sel = document.getElementById('filter-month');
+  const prev = sel.value;
+  const keys = [...new Set(bills.map(b => monthKey(b.nextDueDate)).filter(Boolean))].sort();
+  const hasNoDate = bills.some(b => !b.nextDueDate);
+  sel.innerHTML = '<option value="All">All Months</option>' +
+    keys.map(k => `<option value="${k}">${monthLabel(k)}</option>`).join('') +
+    (hasNoDate ? '<option value="NoDate">No Due Date</option>' : '');
+  const tm = currentMonthKey();
+  if (!updateMonthFilters.initialized) { updateMonthFilters.initialized = true; sel.value = keys.includes(tm) ? tm : 'All'; }
+  else if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
+  else sel.value = 'All';
+
+  const psel = document.getElementById('filter-payment-month');
+  const pprev = psel.value;
+  const pkeys = [...new Set(payments.map(p => monthKey(p.paidDate)).filter(Boolean))].sort();
+  psel.innerHTML = '<option value="All">All Months</option>' + pkeys.map(k => `<option value="${k}">${monthLabel(k)}</option>`).join('');
+  psel.value = (pprev && pkeys.includes(pprev)) ? pprev : 'All';
+}
+function billMatchesFilters(b) {
+  const fHome = document.getElementById('filter-home').value;
+  const fStatus = document.getElementById('filter-status').value;
+  const fMonth = document.getElementById('filter-month').value;
+  const q = document.getElementById('filter-search').value.trim().toLowerCase();
+  if (fHome !== 'All' && b.home !== fHome) return false;
+  if (fStatus === 'Overdue') { if (!isOverdue(b)) return false; }
+  else if (fStatus !== 'All' && b.status !== fStatus) return false;
+  if (fMonth === 'NoDate') { if (b.nextDueDate) return false; }
+  else if (fMonth !== 'All' && monthKey(b.nextDueDate) !== fMonth) return false;
+  if (q && !(`${b.category} ${b.home} ${b.vendor} ${b.bankAccount} ${b.notes}`.toLowerCase().includes(q))) return false;
+  return true;
+}
+function getBillStatusBadge(b) {
+  if (b.status === 'Paid') return '<span class="badge green">✓ Paid</span>';
+  if (!b.nextDueDate) return '<span class="badge gray">No Date</span>';
+  const d = daysUntil(b.nextDueDate);
+  if (d < 0) return `<span class="badge red">Overdue ${Math.abs(d)}d</span>`;
+  if (d <= (b.reminderDays || 7)) return `<span class="badge orange">Due in ${d}d</span>`;
+  return `<span class="badge blue">Pending</span>`;
+}
+function billRowHTML(b) {
+  return `<tr>
+    <td><strong>${esc(b.home)}</strong></td><td>${esc(b.category)}${b.notes ? ` <span title="${esc(b.notes)}">📝</span>` : ''}</td>
+    <td>${esc(b.bankAccount)}</td><td><small>${esc(b.frequency)}</small></td>
+    <td>${b.amount ? '<strong>' + money(b.amount) + '</strong>' : '<span style="color:var(--orange);">not set</span>'}</td>
+    <td><small>${b.nextDueDate || 'Not set'}</small></td><td>${getBillStatusBadge(b)}</td>
+    <td><div class="actions">
+      ${b.status === 'Pending' ? `<button class="btn btn-success action-btn" onclick="openPayModal('${b.id}')">✓ Pay</button>` : ''}
+      <button class="btn btn-secondary action-btn" onclick="editBill('${b.id}')">Edit</button>
+      <button class="btn btn-danger action-btn" onclick="deleteBill('${b.id}')">🗑</button>
+    </div></td></tr>`;
+}
+function renderBills() {
+  const fMonth = document.getElementById('filter-month').value;
+  const filtered = bills.filter(billMatchesFilters)
+    .sort((a, b) => (a.nextDueDate || '9999').localeCompare(b.nextDueDate || '9999'));
+
+  const total = sumAmounts(filtered), paid = sumAmounts(filtered.filter(b => b.status === 'Paid'));
+  const noAmount = filtered.filter(b => !amt(b.amount)).length;
+  const label = fMonth === 'All' ? 'All months' : fMonth === 'NoDate' ? 'No due date' : monthLabel(fMonth);
+  document.getElementById('bills-summary').innerHTML =
+    `<div><strong>${label}</strong> — ${filtered.length} bill${filtered.length === 1 ? '' : 's'}</div>
+     <div>Total: <strong>${money(total)}</strong></div>
+     <div>Paid: <strong style="color:var(--green);">${money(paid)}</strong></div>
+     <div>Outstanding: <strong style="color:var(--red);">${money(total - paid)}</strong></div>
+     ${noAmount ? `<div style="color:#92400e;">⚠ ${noAmount} without amount</div>` : ''}`;
+
+  const tbody = document.getElementById('bills-tbody');
+  if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);">No bills match these filters</td></tr>'; return; }
+  if (fMonth === 'All') {
+    const groups = {};
+    filtered.forEach(b => { const k = monthKey(b.nextDueDate) || 'NoDate'; (groups[k] = groups[k] || []).push(b); });
+    tbody.innerHTML = Object.keys(groups).sort((a, b) => ((a === 'NoDate') - (b === 'NoDate')) || a.localeCompare(b)).map(k => {
+      const g = groups[k];
+      const lbl = k === 'NoDate' ? 'No due date set' : monthLabel(k);
+      return `<tr class="month-row"><td colspan="8">${lbl} — ${g.length} bill${g.length === 1 ? '' : 's'} — Total ${money(sumAmounts(g))}</td></tr>` + g.map(billRowHTML).join('');
+    }).join('');
+  } else tbody.innerHTML = filtered.map(billRowHTML).join('');
+}
+function showAddBillModal() {
+  editingBillId = null;
+  document.getElementById('bill-modal-title').textContent = 'Add Bill';
+  document.getElementById('bill-form').reset();
+  document.getElementById('bill-reminder').value = settings.defaultReminderDays || 7;
+  document.getElementById('bill-modal').classList.add('show');
+}
+function editBill(id) {
+  editingBillId = id;
+  const b = bills.find(x => x.id === id);
+  document.getElementById('bill-modal-title').textContent = 'Edit Bill';
+  document.getElementById('bill-home').value = b.home;
+  document.getElementById('bill-category').value = b.category;
+  document.getElementById('bill-vendor').value = b.vendor || '';
+  document.getElementById('bill-bank').value = b.bankAccount;
+  document.getElementById('bill-frequency').value = b.frequency;
+  document.getElementById('bill-amount').value = b.amount || '';
+  document.getElementById('bill-due-date').value = b.nextDueDate || '';
+  document.getElementById('bill-reminder').value = b.reminderDays || 7;
+  document.getElementById('bill-notes').value = b.notes || '';
+  document.getElementById('bill-modal').classList.add('show');
+}
+function saveBill(e) {
+  e.preventDefault();
+  const data = {
+    home: document.getElementById('bill-home').value,
+    category: document.getElementById('bill-category').value,
+    vendor: document.getElementById('bill-vendor').value,
+    bankAccount: document.getElementById('bill-bank').value,
+    frequency: document.getElementById('bill-frequency').value,
+    amount: document.getElementById('bill-amount').value,
+    nextDueDate: document.getElementById('bill-due-date').value,
+    reminderDays: parseInt(document.getElementById('bill-reminder').value) || 7,
+    notes: document.getElementById('bill-notes').value
+  };
+  if (editingBillId) {
+    const i = bills.findIndex(b => b.id === editingBillId);
+    bills[i] = { ...bills[i], ...data };
+  } else bills.push({ ...data, id: nextId('B', bills, 4), status: 'Pending' });
+  saveData(); closeModal('bill-modal');
+  refreshAll(); toast(editingBillId ? 'Bill updated' : 'Bill added');
+}
+function deleteBill(id) {
+  if (!confirm('Delete this bill?')) return;
+  bills = bills.filter(b => b.id !== id);
+  saveData(); refreshAll(); toast('Bill deleted');
+}
+
+/* ---- Mark paid + auto-recurrence ---- */
+function openPayModal(id) {
+  const b = bills.find(x => x.id === id);
+  document.getElementById('pay-bill-id').value = id;
+  document.getElementById('pay-modal-info').innerHTML = `<strong>${esc(b.category)}</strong> — ${esc(b.home)} · due ${b.nextDueDate || 'n/a'}${b.frequency !== 'Ad-hoc' ? `<br><small>Recurring (${esc(b.frequency)}): the next bill will be scheduled automatically.</small>` : ''}`;
+  document.getElementById('pay-date').value = todayISO();
+  document.getElementById('pay-amount').value = b.amount || '';
+  document.getElementById('pay-method').value = '';
+  document.getElementById('pay-modal').classList.add('show');
+}
+function confirmMarkPaid(e) {
+  e.preventDefault();
+  const id = document.getElementById('pay-bill-id').value;
+  const b = bills.find(x => x.id === id);
+  b.status = 'Paid';
+  const paidAmt = document.getElementById('pay-amount').value;
+  if (paidAmt && !b.amount) b.amount = paidAmt;
+  payments.push({
+    id: nextId('P', payments, 4), billId: id, home: b.home, category: b.category,
+    paidDate: document.getElementById('pay-date').value, amount: paidAmt,
+    method: document.getElementById('pay-method').value, notes: ''
+  });
+  // Auto-schedule next occurrence for recurring bills
+  let msg = 'Payment recorded ✓';
+  const nextDate = b.nextDueDate ? addFrequency(b.nextDueDate, b.frequency) : '';
+  if (nextDate) {
+    const exists = bills.some(x => x.home === b.home && x.category === b.category && x.nextDueDate === nextDate);
+    if (!exists) {
+      bills.push({ ...b, id: nextId('B', bills, 4), nextDueDate: nextDate, status: 'Pending', amount: b.amount });
+      msg = `Paid ✓ — next ${b.category} scheduled for ${nextDate}`;
+    }
+  }
+  saveData(); closeModal('pay-modal'); refreshAll(); toast(msg);
+}
+
+/* =================== Payments =================== */
+function renderPayments() {
+  const fMonth = document.getElementById('filter-payment-month').value;
+  const fHome = document.getElementById('filter-payment-home').value;
+  const filtered = payments.filter(p =>
+    (fMonth === 'All' || monthKey(p.paidDate) === fMonth) && (fHome === 'All' || p.home === fHome));
+  const total = filtered.reduce((s, p) => s + amt(p.amount), 0);
+  const label = fMonth === 'All' ? 'All months' : monthLabel(fMonth);
+  document.getElementById('payments-summary').innerHTML =
+    `<div><strong>${label}${fHome !== 'All' ? ' · ' + esc(fHome) : ''}</strong> — ${filtered.length} payment${filtered.length === 1 ? '' : 's'}</div>
+     <div>Total paid: <strong style="color:var(--green);">${money(total)}</strong></div>`;
+  const tbody = document.getElementById('payments-tbody');
+  tbody.innerHTML = filtered.length === 0 ?
+    '<tr><td colspan="6" style="text-align:center;color:var(--muted);">No payments recorded</td></tr>' :
+    [...filtered].sort((a, b) => (b.paidDate || '').localeCompare(a.paidDate || '')).map(p => `
+      <tr><td>${p.paidDate || '-'}</td><td>${esc(p.home)}</td><td>${esc(p.category)}</td>
+      <td><strong>${p.amount ? money(p.amount) : '-'}</strong></td><td>${esc(p.method) || '-'}</td>
+      <td><button class="btn btn-danger action-btn" onclick="deletePayment('${p.id}')">🗑</button></td></tr>`).join('');
+}
+function showAddPaymentModal() {
+  document.getElementById('payment-form').reset();
+  document.getElementById('payment-date').value = todayISO();
+  document.getElementById('payment-bill').innerHTML = '<option value="">Manual Entry</option>' +
+    bills.filter(b => b.status === 'Pending').map(b => `<option value="${b.id}">${esc(b.home)} — ${esc(b.category)} — ${b.nextDueDate || 'no date'}</option>`).join('');
+  document.getElementById('payment-modal').classList.add('show');
+}
+function fillPaymentFromBill() {
+  const id = document.getElementById('payment-bill').value;
+  if (!id) return;
+  const b = bills.find(x => x.id === id);
+  document.getElementById('payment-home').value = b.home;
+  document.getElementById('payment-category').value = b.category;
+  document.getElementById('payment-amount').value = b.amount || '';
+}
+function savePayment(e) {
+  e.preventDefault();
+  const billId = document.getElementById('payment-bill').value;
+  payments.push({
+    id: nextId('P', payments, 4), billId,
+    home: document.getElementById('payment-home').value,
+    category: document.getElementById('payment-category').value,
+    paidDate: document.getElementById('payment-date').value,
+    amount: document.getElementById('payment-amount').value,
+    method: document.getElementById('payment-method').value, notes: ''
+  });
+  if (billId) { const b = bills.find(x => x.id === billId); if (b) b.status = 'Paid'; }
+  saveData(); closeModal('payment-modal'); refreshAll(); toast('Payment recorded ✓');
+}
+function deletePayment(id) {
+  if (!confirm('Delete this payment?')) return;
+  payments = payments.filter(p => p.id !== id);
+  saveData(); refreshAll(); toast('Payment deleted');
+}
+function exportPaymentsCSV() {
+  const fMonth = document.getElementById('filter-payment-month').value;
+  const rows = payments.filter(p => fMonth === 'All' || monthKey(p.paidDate) === fMonth);
+  downloadCSV('caring-feathers-payments' + (fMonth !== 'All' ? '-' + fMonth : '') + '.csv',
+    [['Date', 'Home', 'Category', 'Amount', 'Method'], ...rows.map(p => [p.paidDate, p.home, p.category, p.amount, p.method])]);
+}
+
+/* =================== Calendar =================== */
+function renderCalendar() {
+  if (!calMonth) calMonth = currentMonthKey();
+  const [y, m] = calMonth.split('-').map(Number);
+  document.getElementById('cal-title').textContent = monthLabel(calMonth);
+  const monthBills = bills.filter(b => monthKey(b.nextDueDate) === calMonth);
+  const total = sumAmounts(monthBills), paid = sumAmounts(monthBills.filter(b => b.status === 'Paid'));
+  document.getElementById('cal-summary').innerHTML =
+    `<div><strong>${monthBills.length}</strong> bills due</div><div>Total: <strong>${money(total)}</strong></div>
+     <div>Paid: <strong style="color:var(--green);">${money(paid)}</strong></div>
+     <div>Outstanding: <strong style="color:var(--red);">${money(total - paid)}</strong></div>`;
+
+  const first = new Date(y, m - 1, 1);
+  const startDow = (first.getDay() + 6) % 7;       // Monday-first
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const today = todayISO();
+  let html = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d => `<div class="cal-dow">${d}</div>`).join('');
+  for (let i = 0; i < startDow; i++) html += '<div class="cal-day other"></div>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dayBills = monthBills.filter(b => b.nextDueDate === dateStr);
+    const chips = dayBills.slice(0, 3).map(b => {
+      const cls = b.status === 'Paid' ? 'green' : (dateStr < today ? 'red' : 'blue');
+      return `<div class="cal-chip ${cls}">${esc(b.home.split(' ')[0])}: ${esc(b.category)}</div>`;
+    }).join('') + (dayBills.length > 3 ? `<div class="cal-chip" style="background:var(--gray-light);color:var(--gray);">+${dayBills.length - 3} more</div>` : '');
+    html += `<div class="cal-day${dateStr === today ? ' today' : ''}" onclick="showCalDay('${dateStr}')"><div class="dnum">${d}</div>${chips}</div>`;
+  }
+  document.getElementById('cal-grid').innerHTML = html;
+  document.getElementById('cal-day-detail').innerHTML = '';
+}
+function calMove(delta) { calMonth = shiftMonthKey(calMonth, delta); renderCalendar(); }
+function calToday() { calMonth = currentMonthKey(); renderCalendar(); }
+function showCalDay(dateStr) {
+  const dayBills = bills.filter(b => b.nextDueDate === dateStr);
+  const el = document.getElementById('cal-day-detail');
+  if (!dayBills.length) { el.innerHTML = `<p style="color:var(--muted);font-size:14px;">No bills due on ${dateStr}.</p>`; return; }
+  el.innerHTML = `<h2 style="font-size:15px;margin-bottom:10px;">Bills due ${dateStr}</h2>` + dayBills.map(b =>
+    `<div class="up-item"><div><strong>${esc(b.category)}</strong> ${b.amount ? '· ' + money(b.amount) : ''}<br>
+     <small style="color:var(--muted);">${esc(b.home)} · ${esc(b.bankAccount)}</small></div>
+     <div style="display:flex;gap:8px;align-items:center;">${getBillStatusBadge(b)}
+     ${b.status === 'Pending' ? `<button class="btn btn-success action-btn" onclick="openPayModal('${b.id}')">✓ Pay</button>` : ''}</div></div>`).join('');
+}
+
+/* =================== Reports =================== */
+function renderReports() {
+  const inp = document.getElementById('report-month');
+  if (!inp.value) inp.value = currentMonthKey();
+  const rk = inp.value;
+  const monthBills = bills.filter(b => monthKey(b.nextDueDate) === rk);
+  const monthPays = payments.filter(p => monthKey(p.paidDate) === rk);
+  const billed = sumAmounts(monthBills);
+  const paidTotal = monthPays.reduce((s, p) => s + amt(p.amount), 0);
+  const outstanding = sumAmounts(monthBills.filter(b => b.status === 'Pending'));
+  const prevPays = payments.filter(p => monthKey(p.paidDate) === shiftMonthKey(rk, -1)).reduce((s, p) => s + amt(p.amount), 0);
+
+  document.getElementById('rep-billed').textContent = money0(billed);
+  document.getElementById('rep-billed-sub').textContent = monthBills.length + ' bills due in ' + monthLabel(rk);
+  document.getElementById('rep-paid').textContent = money0(paidTotal);
+  document.getElementById('rep-paid-sub').textContent = monthPays.length + ' payments';
+  document.getElementById('rep-outstanding').textContent = money0(outstanding);
+  document.getElementById('rep-outstanding-sub').textContent = monthBills.filter(b => b.status === 'Pending').length + ' unpaid bills';
+  const diff = paidTotal - prevPays;
+  document.getElementById('rep-vs').textContent = (diff >= 0 ? '+' : '−') + money0(Math.abs(diff)).slice(1);
+  document.getElementById('rep-vs').style.color = diff > 0 ? 'var(--red)' : 'var(--green)';
+  document.getElementById('rep-vs-sub').textContent = 'spend vs ' + monthLabel(shiftMonthKey(rk, -1));
+
+  // by home / by category (payments in month)
+  const palette = ['#2563eb', '#16a34a', '#f59e0b', '#dc2626', '#7c3aed', '#0891b2', '#be185d', '#65a30d'];
+  const groupSum = (list, keyFn) => { const g = {}; list.forEach(x => { const k = keyFn(x) || '—'; g[k] = (g[k] || 0) + amt(x.amount); }); return Object.entries(g).sort((a, b) => b[1] - a[1]); };
+  const renderBars = (el, entries) => {
+    const max = Math.max(...entries.map(e => e[1]), 1);
+    document.getElementById(el).innerHTML = entries.length === 0 ? '<p style="color:var(--muted);font-size:14px;">No payments this month.</p>' :
+      entries.map(([k, v], i) => `<div class="bar-row"><div class="lbl">${esc(k)}</div>
+        <div class="track"><div class="fill" style="width:${Math.round(v / max * 100)}%;background:${palette[i % palette.length]};"></div></div>
+        <div class="val">${money(v)}</div></div>`).join('');
+  };
+  renderBars('rep-by-home', groupSum(monthPays, p => p.home));
+  renderBars('rep-by-category', groupSum(monthPays, p => p.category));
+
+  // budget vs actual
+  document.getElementById('rep-budget').innerHTML = homes.filter(h => h.active).map(h => {
+    const spent = monthPays.filter(p => p.home === h.name).reduce((s, p) => s + amt(p.amount), 0);
+    const budget = +h.monthlyBudget || 0;
+    const pct = budget ? Math.min(100, Math.round(spent / budget * 100)) : 0;
+    const over = budget && spent > budget;
+    return `<div class="budget-row"><div class="top"><strong>${esc(h.name)}</strong>
+      <span>${money(spent)}${budget ? ' of ' + money0(budget) + (over ? ' ⚠ over budget' : '') : ' — no budget set'}</span></div>
+      <div class="progress"><div class="p-fill" style="width:${budget ? pct : 0}%;background:${over ? 'var(--red)' : pct > 85 ? 'var(--orange)' : 'var(--green)'};"></div></div></div>`;
+  }).join('');
+
+  // 12-month trend
+  const keys = []; for (let i = 11; i >= 0; i--) keys.push(shiftMonthKey(rk, -i));
+  const vals = keys.map(k => payments.filter(p => monthKey(p.paidDate) === k).reduce((s, p) => s + amt(p.amount), 0));
+  const maxV = Math.max(...vals, 1);
+  document.getElementById('rep-trend').innerHTML = keys.map((k, i) =>
+    `<div class="trend-col"><div class="t-val">${vals[i] ? money0(vals[i]) : ''}</div>
+     <div class="trend-bar" style="height:${Math.max(2, Math.round(vals[i] / maxV * 100))}%;${k === rk ? '' : 'opacity:.45;'}"></div>
+     <div class="t-lbl">${monthLabelShort(k)}</div></div>`).join('');
+}
+function reportSummaryText() {
+  const rk = document.getElementById('report-month').value || currentMonthKey();
+  const monthBills = bills.filter(b => monthKey(b.nextDueDate) === rk);
+  const monthPays = payments.filter(p => monthKey(p.paidDate) === rk);
+  const paidTotal = monthPays.reduce((s, p) => s + amt(p.amount), 0);
+  let txt = `📊 Caring Feathers — ${monthLabel(rk)} Summary\n`;
+  txt += `Billed: ${money(sumAmounts(monthBills))} (${monthBills.length} bills)\n`;
+  txt += `Paid: ${money(paidTotal)} (${monthPays.length} payments)\n`;
+  txt += `Outstanding: ${money(sumAmounts(monthBills.filter(b => b.status === 'Pending')))}\n\nBy home:\n`;
+  homes.filter(h => h.active).forEach(h => {
+    const spent = monthPays.filter(p => p.home === h.name).reduce((s, p) => s + amt(p.amount), 0);
+    txt += `• ${h.name}: ${money(spent)}${h.monthlyBudget ? ` (budget ${money0(h.monthlyBudget)})` : ''}\n`;
+  });
+  const od = bills.filter(isOverdue);
+  if (od.length) txt += `\n⚠ ${od.length} overdue bill(s): ${money(sumAmounts(od))}`;
+  return txt;
+}
+function copyReportSummary() {
+  const txt = reportSummaryText();
+  (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(
+    () => toast('Summary copied — paste into WhatsApp or email'),
+    () => { prompt('Copy this summary:', txt); });
+}
+function exportReportCSV() {
+  const rk = document.getElementById('report-month').value || currentMonthKey();
+  const monthBills = bills.filter(b => monthKey(b.nextDueDate) === rk);
+  downloadCSV(`caring-feathers-report-${rk}.csv`,
+    [['Home', 'Category', 'Bank', 'Frequency', 'Amount', 'Due Date', 'Status'],
+     ...monthBills.map(b => [b.home, b.category, b.bankAccount, b.frequency, b.amount, b.nextDueDate, b.status])]);
+}
+function downloadCSV(filename, rows) {
+  const csv = rows.map(r => r.map(c => `"${String(c == null ? '' : c).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' }));
+  a.download = filename; a.click(); URL.revokeObjectURL(a.href);
+  toast('Downloaded ' + filename);
+}
+
+/* =================== Homes =================== */
+function renderHomes() {
+  const tm = currentMonthKey();
+  document.getElementById('homes-grid').innerHTML = homes.map(h => {
+    const spent = payments.filter(p => p.home === h.name && monthKey(p.paidDate) === tm).reduce((s, p) => s + amt(p.amount), 0);
+    const budget = +h.monthlyBudget || 0;
+    const pct = budget ? Math.min(100, Math.round(spent / budget * 100)) : 0;
+    const pendingCount = bills.filter(b => b.home === h.name && b.status === 'Pending').length;
+    return `<div class="home-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+        <div><h3>${esc(h.name)}</h3><span class="badge ${h.active ? 'green' : 'gray'}">${h.active ? 'Active' : 'Inactive'}</span></div>
+        <div class="actions">
+          <button class="btn btn-secondary action-btn" onclick="editHome('${h.id}')">Edit</button>
+          <button class="btn btn-danger action-btn" onclick="deleteHome('${h.id}')">🗑</button>
+        </div></div>
+      ${h.city ? `<p class="home-meta">📍 ${esc(h.city)}</p>` : ''}
+      ${h.manager ? `<p class="home-meta">👤 ${esc(h.manager)}</p>` : ''}
+      ${h.bank ? `<p class="home-meta">🏦 ${esc(h.bank)}</p>` : ''}
+      <p class="home-meta">📋 ${pendingCount} pending bills</p>
+      <div style="margin-top:10px;">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+          <span>${monthLabel(tm)}</span><strong>${money(spent)}${budget ? ' / ' + money0(budget) : ''}</strong></div>
+        <div class="progress"><div class="p-fill" style="width:${pct}%;background:${budget && spent > budget ? 'var(--red)' : pct > 85 ? 'var(--orange)' : 'var(--green)'};"></div></div>
+        ${!budget ? '<small style="color:var(--muted);">No budget set — edit to add one</small>' : ''}
+      </div></div>`;
+  }).join('');
+}
+function showAddHomeModal() {
+  editingHomeId = null;
+  document.getElementById('home-modal-title').textContent = 'Add Home';
+  document.getElementById('home-form').reset();
+  document.getElementById('home-modal').classList.add('show');
+}
+function editHome(id) {
+  editingHomeId = id;
+  const h = homes.find(x => x.id === id);
+  document.getElementById('home-modal-title').textContent = 'Edit Home';
+  document.getElementById('home-name').value = h.name;
+  document.getElementById('home-city').value = h.city || '';
+  document.getElementById('home-manager').value = h.manager || '';
+  document.getElementById('home-bank').value = h.bank || '';
+  document.getElementById('home-budget').value = h.monthlyBudget || '';
+  document.getElementById('home-modal').classList.add('show');
+}
+function saveHome(e) {
+  e.preventDefault();
+  const data = {
+    name: document.getElementById('home-name').value,
+    city: document.getElementById('home-city').value,
+    manager: document.getElementById('home-manager').value,
+    bank: document.getElementById('home-bank').value,
+    monthlyBudget: parseFloat(document.getElementById('home-budget').value) || 0,
+    active: true
+  };
+  if (editingHomeId) { const i = homes.findIndex(h => h.id === editingHomeId); homes[i] = { ...homes[i], ...data }; }
+  else homes.push({ ...data, id: nextId('H', homes, 3) });
+  saveData(); closeModal('home-modal'); updateHomeFilters(); refreshAll(); toast('Home saved');
+}
+function deleteHome(id) {
+  if (!confirm('Delete this home? Its bills stay in the list.')) return;
+  homes = homes.filter(h => h.id !== id);
+  saveData(); updateHomeFilters(); refreshAll(); toast('Home deleted');
+}
+
+/* =================== Settings / notifications / backup =================== */
+function refreshNotifyUI() {
+  const st = document.getElementById('notify-status');
+  const btn = document.getElementById('notify-btn');
+  if (!('Notification' in window)) { st.textContent = 'Not supported in this browser.'; btn.disabled = true; return; }
+  if (settings.notifyEnabled && Notification.permission === 'granted') { st.textContent = '✓ Enabled on this device'; btn.textContent = 'Disable notifications'; }
+  else { st.textContent = Notification.permission === 'denied' ? 'Blocked in browser settings.' : 'Currently off'; btn.textContent = 'Enable notifications'; }
+}
+function toggleNotifications() {
+  if (settings.notifyEnabled) { settings.notifyEnabled = false; saveData(); refreshNotifyUI(); toast('Notifications off'); return; }
+  Notification.requestPermission().then(perm => {
+    if (perm === 'granted') { settings.notifyEnabled = true; saveData(); toast('Notifications enabled ✓'); notifyDueBills(); }
+    else toast('Permission not granted');
+    refreshNotifyUI();
+  });
+}
+function testNotification() {
+  if (!('Notification' in window) || Notification.permission !== 'granted') { toast('Enable notifications first'); return; }
+  new Notification('Caring Feathers 🔔', { body: 'Test reminder — notifications are working!' });
+}
+function notifyDueBills() {
+  if (!settings.notifyEnabled || !('Notification' in window) || Notification.permission !== 'granted') return;
+  const od = bills.filter(isOverdue);
+  const ds = bills.filter(b => b.status === 'Pending' && b.nextDueDate && daysUntil(b.nextDueDate) >= 0 && daysUntil(b.nextDueDate) <= (b.reminderDays || settings.defaultReminderDays || 7));
+  if (!od.length && !ds.length) return;
+  let body = '';
+  if (od.length) body += `${od.length} overdue (${money(sumAmounts(od))}). `;
+  if (ds.length) body += `${ds.length} due soon (${money(sumAmounts(ds))}).`;
+  new Notification('Caring Feathers — bills need attention', { body });
+}
+function saveSettings() {
+  settings.defaultReminderDays = parseInt(document.getElementById('setting-reminder').value) || 7;
+  saveData(); toast('Settings saved');
+}
+function exportBackup() {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify({ homes, bills, payments, settings, exported: todayISO() }, null, 2)], { type: 'application/json' }));
+  a.download = 'caring-feathers-backup-' + todayISO() + '.json'; a.click(); URL.revokeObjectURL(a.href);
+  toast('Backup downloaded');
+}
+function importBackup(ev) {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!Array.isArray(data.bills) || !Array.isArray(data.homes)) throw new Error('Not a valid backup');
+      if (!confirm(`Import backup from ${data.exported || 'unknown date'}? This replaces current data.`)) return;
+      homes = data.homes; bills = data.bills; payments = data.payments || []; settings = data.settings || settings;
+      saveData(); updateHomeFilters(); updateMonthFilters(); refreshAll(); refreshNotifyUI();
+      toast('Backup imported ✓');
+    } catch (err) { alert('Could not import: ' + err.message); }
+  };
+  reader.readAsText(file);
+  ev.target.value = '';
+}
+function clearAllData() {
+  if (!confirm('Delete ALL bills, payments and homes on this device?')) return;
+  if (!confirm('Are you absolutely sure? Consider exporting a backup first.')) return;
+  Object.values(LS).forEach(k => localStorage.removeItem(k));
+  location.reload();
+}
+
+/* =================== Shared =================== */
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); }));
+function refreshAll() {
+  updateMonthFilters(); renderDashboard(); renderBills(); renderPayments();
+  if (!document.getElementById('calendar-tab').classList.contains('hidden')) renderCalendar();
+  if (!document.getElementById('reports-tab').classList.contains('hidden')) renderReports();
+  if (!document.getElementById('homes-tab').classList.contains('hidden')) renderHomes();
+}
+function init() {
+  loadData();
+  updateHomeFilters();
+  updateMonthFilters();
+  document.getElementById('setting-reminder').value = settings.defaultReminderDays || 7;
+  renderDashboard(); renderBills(); renderPayments(); renderHomes(); refreshNotifyUI();
+  setTimeout(notifyDueBills, 1500);
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+}
+window.onload = init;
+</script>
+</body>
+</html>
