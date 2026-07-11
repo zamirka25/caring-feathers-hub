@@ -1246,7 +1246,7 @@ async function clearAllData() {
 
 /* =================== Shared =================== */
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
-document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); }));
+document.querySelectorAll('.modal').forEach(m => { if (m.id !== 'login-screen') m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); }); });
 function refreshAll() {
   updateMonthFilters(); renderDashboard(); renderBills(); renderPayments();
   if (!document.getElementById('calendar-tab').classList.contains('hidden')) renderCalendar();
