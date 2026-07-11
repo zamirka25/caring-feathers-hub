@@ -81,6 +81,7 @@ button.btn { padding: 9px 16px; border: none; border-radius: 9px; cursor: pointe
 .badge.blue { background: var(--blue-light); color: var(--blue); }
 .badge.green { background: var(--green-light); color: var(--green); }
 .badge.gray { background: var(--gray-light); color: var(--gray); }
+.badge.purple { background: var(--purple-light); color: var(--purple); }
 .filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
 .filters select, .filters input { padding: 9px 12px; border: 1px solid #d1d5db; border-radius: 9px; font-size: 14px; background: white; min-width: 130px; flex: 1; }
 .filters .btn { flex-shrink: 0; }
@@ -135,6 +136,7 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
 .cal-chip.red { background: var(--red-light); color: var(--red); }
 .cal-chip.blue { background: var(--blue-light); color: var(--blue); }
 .cal-chip.green { background: var(--green-light); color: var(--green); }
+.cal-chip.proj { background: var(--purple-light); color: #6d28d9; opacity: .8; }
 @media (max-width: 640px) { .cal-day { min-height: 58px; } .cal-chip { font-size: 8.5px; } }
 
 /* ===== Reports ===== */
@@ -220,9 +222,9 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
         <div id="upcoming-bills"></div>
       </div>
       <div class="section">
-        <h2>📈 3-Month Outlook — what's due</h2>
+        <h2>📈 Months Ahead — what's due</h2>
         <div id="outlook"></div>
-        <p style="font-size:12px;color:var(--muted);margin-top:6px;">Projected from scheduled bills. Open Reports for full breakdowns.</p>
+        <p style="font-size:12px;color:var(--muted);margin-top:6px;">Blue = bills already scheduled · Purple = expected recurring bills (forecast). Open Reports for full breakdowns.</p>
       </div>
     </div>
 
@@ -592,6 +594,65 @@ function addFrequency(dateStr, freq) {
 }
 function isOverdue(b) { return b.status === 'Pending' && b.nextDueDate && daysUntil(b.nextDueDate) < 0; }
 function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 3200); }
+
+/* =================== Recurring-bill forecast =================== */
+// Projects each recurring bill forward to the end of the year (at least 6 months
+// ahead), so future months show what is EXPECTED to be due, not just bills that
+// already exist. Projections are display-only until added or paid.
+let projectedCache = [];
+function forecastHorizon() {
+  const now = new Date();
+  const eoy = now.getFullYear() + '-12-31';
+  const six = new Date(now.getFullYear(), now.getMonth() + 7, 0).toISOString().slice(0, 10);
+  return eoy > six ? eoy : six;
+}
+function getProjectedBills() {
+  const horizon = forecastHorizon();
+  const recurring = ['Weekly', 'Every 4 Weeks', 'Monthly', 'Quarterly', 'Annual'];
+  const series = {};
+  bills.forEach(b => {
+    if (!b.nextDueDate || !recurring.includes(b.frequency)) return;
+    const k = b.home + '|' + (b.category || '').toLowerCase().trim() + '|' + b.frequency;
+    (series[k] = series[k] || []).push(b);
+  });
+  // real bills that already cover a slot (by month, or exact date for weekly cycles)
+  const realByMonth = new Set(), realByDate = new Set();
+  bills.forEach(b => {
+    if (!b.nextDueDate) return;
+    const cat = (b.category || '').toLowerCase().trim();
+    realByMonth.add(b.home + '|' + cat + '|' + monthKey(b.nextDueDate));
+    realByDate.add(b.home + '|' + cat + '|' + b.nextDueDate);
+  });
+  const out = [];
+  Object.values(series).forEach(rows => {
+    rows.sort((a, b) => a.nextDueDate.localeCompare(b.nextDueDate));
+    const last = rows[rows.length - 1];
+    const cat = (last.category || '').toLowerCase().trim();
+    const lastAmt = [...rows].reverse().map(r => r.amount).find(a => a) || '';
+    const shortCycle = last.frequency === 'Weekly' || last.frequency === 'Every 4 Weeks';
+    let d = addFrequency(last.nextDueDate, last.frequency);
+    let guard = 0;
+    while (d && d <= horizon && guard++ < 80) {
+      const covered = shortCycle ? realByDate.has(last.home + '|' + cat + '|' + d)
+                                 : realByMonth.has(last.home + '|' + cat + '|' + monthKey(d));
+      if (!covered) out.push({ ...last, id: 'proj-' + last.id + '-' + d, amount: lastAmt, nextDueDate: d, status: 'Projected', projected: true });
+      d = addFrequency(d, last.frequency);
+    }
+  });
+  out.sort((a, b) => a.nextDueDate.localeCompare(b.nextDueDate));
+  projectedCache = out;
+  return out;
+}
+function materializeProjection(projId) {
+  const p = projectedCache.find(x => x.id === projId);
+  if (!p) return;
+  const real = { id: nextId('B', bills, 4), home: p.home, category: p.category, vendor: p.vendor || '',
+    bankAccount: p.bankAccount || '', frequency: p.frequency, amount: p.amount || '',
+    nextDueDate: p.nextDueDate, reminderDays: p.reminderDays || 7, status: 'Pending', notes: p.notes || '' };
+  bills.push(real);
+  saveData(); dbUpsert('bills', real);
+  refreshAll(); toast('Bill added for ' + real.nextDueDate);
+}
 function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 /* =================== Data seeding =================== */
@@ -722,14 +783,25 @@ function renderDashboard() {
         <button class="btn btn-success action-btn" onclick="openPayModal('${b.id}')">✓ Pay</button></div></div>`;
     }).join('');
 
-  // 3-month outlook
-  const keys = [tm, shiftMonthKey(tm, 1), shiftMonthKey(tm, 2)];
-  const vals = keys.map(k => sumAmounts(bills.filter(b => monthKey(b.nextDueDate) === k)));
-  const max = Math.max(...vals, 1);
-  document.getElementById('outlook').innerHTML = keys.map((k, i) =>
-    `<div class="outlook-row"><div class="lbl">${monthLabel(k)}</div>
-     <div class="bar-track"><div class="bar-fill" style="width:${Math.round(vals[i] / max * 100)}%;${i === 0 ? '' : 'opacity:.55;'}"></div></div>
-     <div class="val">${money0(vals[i])}</div></div>`).join('');
+  // months-ahead outlook with recurring forecast (to end of year, min 6 months)
+  const horizonMonth = monthKey(forecastHorizon());
+  const proj = getProjectedBills();
+  const keys = [];
+  for (let k = tm; k <= horizonMonth && keys.length < 12; k = shiftMonthKey(k, 1)) keys.push(k);
+  const realVals = keys.map(k => sumAmounts(bills.filter(b => monthKey(b.nextDueDate) === k)));
+  const projVals = keys.map(k => sumAmounts(proj.filter(b => monthKey(b.nextDueDate) === k)));
+  const max = Math.max(...keys.map((k, i) => realVals[i] + projVals[i]), 1);
+  document.getElementById('outlook').innerHTML = keys.map((k, i) => {
+    const totalV = realVals[i] + projVals[i];
+    const realPct = Math.round(realVals[i] / max * 100);
+    const projPct = Math.round(projVals[i] / max * 100);
+    return `<div class="outlook-row"><div class="lbl">${monthLabel(k)}</div>
+     <div class="bar-track" style="display:flex;">
+       <div class="bar-fill" style="width:${realPct}%;${i === 0 ? '' : 'opacity:.6;'}"></div>
+       <div class="bar-fill" style="width:${projPct}%;background:var(--purple);opacity:.5;border-radius:0 8px 8px 0;"></div>
+     </div>
+     <div class="val">${money0(totalV)}</div></div>`;
+  }).join('');
 }
 function jumpToOverdue() { showTab('bills'); document.getElementById('filter-status').value = 'Overdue'; document.getElementById('filter-month').value = 'All'; renderBills(); }
 
@@ -743,7 +815,10 @@ function updateHomeFilters() {
 function updateMonthFilters() {
   const sel = document.getElementById('filter-month');
   const prev = sel.value;
-  const keys = [...new Set(bills.map(b => monthKey(b.nextDueDate)).filter(Boolean))].sort();
+  const keys = [...new Set([
+    ...bills.map(b => monthKey(b.nextDueDate)),
+    ...getProjectedBills().map(b => monthKey(b.nextDueDate))
+  ].filter(Boolean))].sort();
   const hasNoDate = bills.some(b => !b.nextDueDate);
   sel.innerHTML = '<option value="All">All Months</option>' +
     keys.map(k => `<option value="${k}">${monthLabel(k)}</option>`).join('') +
@@ -765,14 +840,16 @@ function billMatchesFilters(b) {
   const fMonth = document.getElementById('filter-month').value;
   const q = document.getElementById('filter-search').value.trim().toLowerCase();
   if (fHome !== 'All' && b.home !== fHome) return false;
+  const effStatus = b.projected ? 'Pending' : b.status;
   if (fStatus === 'Overdue') { if (!isOverdue(b)) return false; }
-  else if (fStatus !== 'All' && b.status !== fStatus) return false;
+  else if (fStatus !== 'All' && effStatus !== fStatus) return false;
   if (fMonth === 'NoDate') { if (b.nextDueDate) return false; }
   else if (fMonth !== 'All' && monthKey(b.nextDueDate) !== fMonth) return false;
   if (q && !(`${b.category} ${b.home} ${b.vendor} ${b.bankAccount} ${b.notes}`.toLowerCase().includes(q))) return false;
   return true;
 }
 function getBillStatusBadge(b) {
+  if (b.projected) return '<span class="badge purple">Expected</span>';
   if (b.status === 'Paid') return '<span class="badge green">✓ Paid</span>';
   if (!b.nextDueDate) return '<span class="badge gray">No Date</span>';
   const d = daysUntil(b.nextDueDate);
@@ -781,6 +858,16 @@ function getBillStatusBadge(b) {
   return `<span class="badge blue">Pending</span>`;
 }
 function billRowHTML(b) {
+  if (b.projected) {
+    return `<tr style="opacity:.8;">
+      <td><strong>${esc(b.home)}</strong></td><td>${esc(b.category)}</td>
+      <td>${esc(b.bankAccount)}</td><td><small>${esc(b.frequency)}</small></td>
+      <td>${b.amount ? money(b.amount) : '<span style="color:var(--orange);">not set</span>'}</td>
+      <td><small>${b.nextDueDate}</small></td><td>${getBillStatusBadge(b)}</td>
+      <td><div class="actions">
+        <button class="btn btn-secondary action-btn" onclick="materializeProjection('${b.id}')">➕ Add now</button>
+      </div></td></tr>`;
+  }
   return `<tr>
     <td><strong>${esc(b.home)}</strong></td><td>${esc(b.category)}${b.notes ? ` <span title="${esc(b.notes)}">📝</span>` : ''}</td>
     <td>${esc(b.bankAccount)}</td><td><small>${esc(b.frequency)}</small></td>
@@ -794,10 +881,12 @@ function billRowHTML(b) {
 }
 function renderBills() {
   const fMonth = document.getElementById('filter-month').value;
-  const filtered = bills.filter(billMatchesFilters)
+  const projected = getProjectedBills().filter(billMatchesFilters);
+  const filtered = bills.filter(billMatchesFilters).concat(projected)
     .sort((a, b) => (a.nextDueDate || '9999').localeCompare(b.nextDueDate || '9999'));
 
   const total = sumAmounts(filtered), paid = sumAmounts(filtered.filter(b => b.status === 'Paid'));
+  const expected = sumAmounts(projected);
   const noAmount = filtered.filter(b => !amt(b.amount)).length;
   const label = fMonth === 'All' ? 'All months' : fMonth === 'NoDate' ? 'No due date' : monthLabel(fMonth);
   document.getElementById('bills-summary').innerHTML =
@@ -805,6 +894,7 @@ function renderBills() {
      <div>Total: <strong>${money(total)}</strong></div>
      <div>Paid: <strong style="color:var(--green);">${money(paid)}</strong></div>
      <div>Outstanding: <strong style="color:var(--red);">${money(total - paid)}</strong></div>
+     ${expected ? `<div>of which expected recurring: <strong style="color:var(--purple);">${money(expected)}</strong></div>` : ''}
      ${noAmount ? `<div style="color:#92400e;">⚠ ${noAmount} without amount</div>` : ''}`;
 
   const tbody = document.getElementById('bills-tbody');
@@ -978,12 +1068,15 @@ function renderCalendar() {
   if (!calMonth) calMonth = currentMonthKey();
   const [y, m] = calMonth.split('-').map(Number);
   document.getElementById('cal-title').textContent = monthLabel(calMonth);
-  const monthBills = bills.filter(b => monthKey(b.nextDueDate) === calMonth);
+  const monthBills = bills.filter(b => monthKey(b.nextDueDate) === calMonth)
+    .concat(getProjectedBills().filter(b => monthKey(b.nextDueDate) === calMonth));
   const total = sumAmounts(monthBills), paid = sumAmounts(monthBills.filter(b => b.status === 'Paid'));
+  const expected = sumAmounts(monthBills.filter(b => b.projected));
   document.getElementById('cal-summary').innerHTML =
     `<div><strong>${monthBills.length}</strong> bills due</div><div>Total: <strong>${money(total)}</strong></div>
      <div>Paid: <strong style="color:var(--green);">${money(paid)}</strong></div>
-     <div>Outstanding: <strong style="color:var(--red);">${money(total - paid)}</strong></div>`;
+     <div>Outstanding: <strong style="color:var(--red);">${money(total - paid)}</strong></div>
+     ${expected ? `<div>expected recurring: <strong style="color:var(--purple);">${money(expected)}</strong></div>` : ''}`;
 
   const first = new Date(y, m - 1, 1);
   const startDow = (first.getDay() + 6) % 7;       // Monday-first
@@ -995,7 +1088,7 @@ function renderCalendar() {
     const dateStr = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const dayBills = monthBills.filter(b => b.nextDueDate === dateStr);
     const chips = dayBills.slice(0, 3).map(b => {
-      const cls = b.status === 'Paid' ? 'green' : (dateStr < today ? 'red' : 'blue');
+      const cls = b.projected ? 'proj' : b.status === 'Paid' ? 'green' : (dateStr < today ? 'red' : 'blue');
       return `<div class="cal-chip ${cls}">${esc(b.home.split(' ')[0])}: ${esc(b.category)}</div>`;
     }).join('') + (dayBills.length > 3 ? `<div class="cal-chip" style="background:var(--gray-light);color:var(--gray);">+${dayBills.length - 3} more</div>` : '');
     html += `<div class="cal-day${dateStr === today ? ' today' : ''}" onclick="showCalDay('${dateStr}')"><div class="dnum">${d}</div>${chips}</div>`;
@@ -1006,14 +1099,16 @@ function renderCalendar() {
 function calMove(delta) { calMonth = shiftMonthKey(calMonth, delta); renderCalendar(); }
 function calToday() { calMonth = currentMonthKey(); renderCalendar(); }
 function showCalDay(dateStr) {
-  const dayBills = bills.filter(b => b.nextDueDate === dateStr);
+  const dayBills = bills.filter(b => b.nextDueDate === dateStr)
+    .concat(getProjectedBills().filter(b => b.nextDueDate === dateStr));
   const el = document.getElementById('cal-day-detail');
   if (!dayBills.length) { el.innerHTML = `<p style="color:var(--muted);font-size:14px;">No bills due on ${dateStr}.</p>`; return; }
   el.innerHTML = `<h2 style="font-size:15px;margin-bottom:10px;">Bills due ${dateStr}</h2>` + dayBills.map(b =>
     `<div class="up-item"><div><strong>${esc(b.category)}</strong> ${b.amount ? '· ' + money(b.amount) : ''}<br>
      <small style="color:var(--muted);">${esc(b.home)} · ${esc(b.bankAccount)}</small></div>
      <div style="display:flex;gap:8px;align-items:center;">${getBillStatusBadge(b)}
-     ${b.status === 'Pending' ? `<button class="btn btn-success action-btn" onclick="openPayModal('${b.id}')">✓ Pay</button>` : ''}</div></div>`).join('');
+     ${b.projected ? `<button class="btn btn-secondary action-btn" onclick="materializeProjection('${b.id}')">➕ Add now</button>` :
+       b.status === 'Pending' ? `<button class="btn btn-success action-btn" onclick="openPayModal('${b.id}')">✓ Pay</button>` : ''}</div></div>`).join('');
 }
 
 /* =================== Reports =================== */
