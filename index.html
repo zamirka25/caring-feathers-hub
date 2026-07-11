@@ -1275,8 +1275,12 @@ function refreshNotifyUI() {
   const st = document.getElementById('notify-status');
   const btn = document.getElementById('notify-btn');
   if (!('Notification' in window)) { st.textContent = 'Not supported in this browser.'; btn.disabled = true; return; }
-  if (settings.notifyEnabled && Notification.permission === 'granted') { st.textContent = '✓ Enabled on this device'; btn.textContent = 'Disable notifications'; }
-  else { st.textContent = Notification.permission === 'denied' ? 'Blocked in browser settings.' : 'Currently off'; btn.textContent = 'Enable notifications'; }
+  const { od, ds } = dueBillsNow();
+  const next = bills.filter(b => b.status === 'Pending' && b.nextDueDate && daysUntil(b.nextDueDate) >= 0)
+    .sort((a, b) => a.nextDueDate.localeCompare(b.nextDueDate))[0];
+  const now = ` Right now: ${od.length} overdue, ${ds.length} due soon${(!od.length && !ds.length && next) ? ` — nothing to alert yet (next bill: ${next.category} on ${next.nextDueDate})` : ''}.`;
+  if (settings.notifyEnabled && Notification.permission === 'granted') { st.textContent = '✓ Enabled on this device.' + now; btn.textContent = 'Disable notifications'; }
+  else { st.textContent = (Notification.permission === 'denied' ? 'Blocked in browser settings.' : 'Currently off.') + now; btn.textContent = 'Enable notifications'; }
 }
 function toggleNotifications() {
   if (settings.notifyEnabled) { settings.notifyEnabled = false; saveData(); refreshNotifyUI(); toast('Notifications off'); return; }
@@ -1286,19 +1290,36 @@ function toggleNotifications() {
     refreshNotifyUI();
   });
 }
+function showNote(title, body) {
+  // Phones and installed apps require the service worker to show notifications;
+  // plain "new Notification()" throws on Android Chrome. Try SW first, then fall back.
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const fallback = () => { try { new Notification(title, { body, icon: 'icons/icon-192.png' }); } catch (e) { toast('⚠ This browser blocked the notification'); } };
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistration().then(reg => {
+      if (reg) reg.showNotification(title, { body, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', tag: 'cf-' + title }).catch(fallback);
+      else fallback();
+    }).catch(fallback);
+  } else fallback();
+}
 function testNotification() {
-  if (!('Notification' in window) || Notification.permission !== 'granted') { toast('Enable notifications first'); return; }
-  new Notification('Caring Feathers 🔔', { body: 'Test reminder — notifications are working!' });
+  if (!('Notification' in window)) { toast('This browser does not support notifications'); return; }
+  if (Notification.permission !== 'granted') { toast('Enable notifications first (button on the left)'); return; }
+  showNote('Caring Feathers 🔔', 'Test reminder — notifications are working!');
+}
+function dueBillsNow() {
+  const od = bills.filter(isOverdue);
+  const ds = bills.filter(b => b.status === 'Pending' && b.nextDueDate && daysUntil(b.nextDueDate) >= 0 && daysUntil(b.nextDueDate) <= (b.reminderDays || settings.defaultReminderDays || 7));
+  return { od, ds };
 }
 function notifyDueBills() {
   if (!settings.notifyEnabled || !('Notification' in window) || Notification.permission !== 'granted') return;
-  const od = bills.filter(isOverdue);
-  const ds = bills.filter(b => b.status === 'Pending' && b.nextDueDate && daysUntil(b.nextDueDate) >= 0 && daysUntil(b.nextDueDate) <= (b.reminderDays || settings.defaultReminderDays || 7));
+  const { od, ds } = dueBillsNow();
   if (!od.length && !ds.length) return;
   let body = '';
   if (od.length) body += `${od.length} overdue (${money(sumAmounts(od))}). `;
   if (ds.length) body += `${ds.length} due soon (${money(sumAmounts(ds))}).`;
-  new Notification('Caring Feathers — bills need attention', { body });
+  showNote('Caring Feathers — bills need attention', body);
 }
 function saveSettings() {
   settings.defaultReminderDays = parseInt(document.getElementById('setting-reminder').value) || 7;
