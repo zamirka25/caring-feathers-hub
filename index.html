@@ -44,9 +44,9 @@ button { font-family: inherit; }
 .main { flex: 1; padding: 22px; max-width: 1150px; margin: 0 auto; width: 100%; }
 
 /* Mobile bottom nav */
-.bottom-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); border-top: 1px solid #e5e7eb; z-index: 60; padding: 4px 2px calc(4px + env(safe-area-inset-bottom)); }
-.bottom-nav .nav-link { flex-direction: column; gap: 2px; font-size: 10px; padding: 6px 2px; margin: 0; flex: 1; align-items: center; border-radius: 8px; }
-.bottom-nav .nav-icon { font-size: 19px; }
+.bottom-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: var(--card); border-top: 1px solid #e5e7eb; z-index: 60; padding: 4px 2px calc(4px + env(safe-area-inset-bottom)); overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.bottom-nav .nav-link { flex-direction: column; gap: 2px; font-size: 9px; padding: 6px 1px; margin: 0; flex: 1 1 0; min-width: 0; width: auto; align-items: center; border-radius: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bottom-nav .nav-icon { font-size: 18px; }
 @media (max-width: 820px) {
   .sidebar { display: none; }
   .bottom-nav { display: flex; }
@@ -196,6 +196,8 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
     <button class="nav-link" data-tab="payments" onclick="showTab('payments')"><span class="nav-icon">💳</span> Payments</button>
     <button class="nav-link" data-tab="reports" onclick="showTab('reports')"><span class="nav-icon">📊</span> Reports</button>
     <button class="nav-link" data-tab="homes" onclick="showTab('homes')"><span class="nav-icon">🏡</span> Homes</button>
+    <button class="nav-link" data-tab="ofsted" onclick="showTab('ofsted')"><span class="nav-icon">🔎</span> Ofsted</button>
+    <button class="nav-link" data-tab="young-people" onclick="showTab('young-people')"><span class="nav-icon">🧒</span> Young People</button>
     <button class="nav-link" data-tab="settings" onclick="showTab('settings')"><span class="nav-icon">⚙️</span> Settings</button>
   </div>
 
@@ -324,6 +326,47 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
       <div class="home-grid" id="homes-grid"></div>
     </div>
 
+    <!-- ============ OFSTED ============ -->
+    <div id="ofsted-tab" class="tab-content hidden">
+      <div class="section">
+        <div class="section-head"><h2>🔎 Ofsted Inspections</h2></div>
+        <div id="ofsted-setup"></div>
+        <div class="summary-bar" id="ofsted-summary"></div>
+        <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Record each residential home's most recent Ofsted inspection date and rating. Set a next-inspection date to get a reminder here when it's due. Changes save and sync to the team automatically.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Home</th><th>Last Inspection</th><th>Rating</th><th>Next Inspection Due</th></tr></thead>
+            <tbody id="ofsted-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ YOUNG PEOPLE ============ -->
+    <div id="young-people-tab" class="tab-content hidden">
+      <div class="section">
+        <div class="section-head"><h2>🧒 Young People</h2><button class="btn btn-primary" id="yp-add-btn" onclick="showAddYpModal()">+ Add Young Person</button></div>
+        <div id="yp-setup"></div>
+        <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 13px;margin-bottom:14px;font-size:12.5px;color:#92400e;">
+          🔒 <strong>Safeguarding:</strong> record <strong>initials only</strong> — never full names. Use a council abbreviation. Only signed-in team members can see this.
+        </div>
+        <div class="filters">
+          <input type="search" id="yp-search" placeholder="🔍 Search initials / council…" oninput="renderYoungPeople()">
+          <select id="yp-filter-home" onchange="renderYoungPeople()"><option value="All">All Homes</option></select>
+          <select id="yp-filter-status" onchange="renderYoungPeople()">
+            <option value="Current">Current residents</option><option value="AwaitingIPA">Awaiting IPA</option><option value="Left">Moved out</option><option value="All">All</option>
+          </select>
+        </div>
+        <div class="summary-bar" id="yp-summary"></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Initials</th><th>Home</th><th>Council</th><th>Moved In</th><th>Moved Out</th><th>IPA</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="yp-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- ============ SETTINGS ============ -->
     <div id="settings-tab" class="tab-content hidden">
       <div class="section">
@@ -361,8 +404,8 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
       </div>
       <div class="section">
         <h2>ℹ️ About</h2>
-        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;"><strong>Caring Feathers Finance Hub — version 2.2</strong> (11 July 2026)<br>
-        Shared team data with live sync · recurring-bill forecast to year end · phone notifications.</p>
+        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;"><strong>Caring Feathers Finance Hub — version 2.4</strong> (12 July 2026)<br>
+        Shared team data with live sync · recurring-bill forecast · Ofsted &amp; Young People tracking (incl. council + IPA) · phone notifications.</p>
       </div>
     </div>
 
@@ -377,6 +420,8 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
   <button class="nav-link" data-tab="payments" onclick="showTab('payments')"><span class="nav-icon">💳</span>Pay</button>
   <button class="nav-link" data-tab="reports" onclick="showTab('reports')"><span class="nav-icon">📊</span>Reports</button>
   <button class="nav-link" data-tab="homes" onclick="showTab('homes')"><span class="nav-icon">🏡</span>Homes</button>
+  <button class="nav-link" data-tab="ofsted" onclick="showTab('ofsted')"><span class="nav-icon">🔎</span>Ofsted</button>
+  <button class="nav-link" data-tab="young-people" onclick="showTab('young-people')"><span class="nav-icon">🧒</span>YP</button>
   <button class="nav-link" data-tab="settings" onclick="showTab('settings')"><span class="nav-icon">⚙️</span>More</button>
 </div>
 
@@ -450,10 +495,37 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
       <div class="form-group"><label>Manager</label><input type="text" id="home-manager"></div>
       <div class="form-group"><label>Main Bank Account</label><input type="text" id="home-bank" list="bank-list"></div>
       <div class="form-group"><label>Monthly Budget (£)</label><input type="number" id="home-budget" step="1" min="0" placeholder="e.g. 3000"></div>
+      <div class="form-group full" style="flex-direction:row;align-items:center;gap:8px;background:#f8f9fb;padding:10px 12px;border-radius:8px;">
+        <input type="checkbox" id="home-residential" style="width:18px;height:18px;flex:none;">
+        <label for="home-residential" style="margin:0;font-weight:600;">This is a residential children's home <span style="font-weight:400;color:var(--muted);">(shows in Ofsted &amp; Young People tabs)</span></label>
+      </div>
     </div>
     <div class="form-actions">
       <button type="button" class="btn btn-secondary" onclick="closeModal('home-modal')">Cancel</button>
       <button type="submit" class="btn btn-primary">Save Home</button>
+    </div>
+  </form>
+</div></div>
+
+<div id="yp-modal" class="modal"><div class="modal-content">
+  <h2 id="yp-modal-title">Add Young Person</h2>
+  <form id="yp-form" onsubmit="saveYp(event)">
+    <div class="form-grid">
+      <div class="form-group"><label>Initials * <span style="font-weight:400;color:var(--muted);">(no full names)</span></label><input type="text" id="yp-initials" maxlength="6" placeholder="e.g. J.D." required></div>
+      <div class="form-group"><label>Home *</label><select id="yp-home" required></select></div>
+      <div class="form-group"><label>Council <span style="font-weight:400;color:var(--muted);">(abbreviation)</span></label><input type="text" id="yp-council" list="council-list" placeholder="e.g. SBC" maxlength="12"><datalist id="council-list"></datalist></div>
+      <div class="form-group"><label>Date Moved In *</label><input type="date" id="yp-in" required></div>
+      <div class="form-group"><label>Date Moved Out <span style="font-weight:400;color:var(--muted);">(leave blank if current)</span></label><input type="date" id="yp-out"></div>
+      <div class="form-group full" style="flex-direction:row;align-items:center;gap:8px;background:#f8f9fb;padding:10px 12px;border-radius:8px;">
+        <input type="checkbox" id="yp-ipa" style="width:18px;height:18px;flex:none;">
+        <label for="yp-ipa" style="margin:0;font-weight:600;">IPA received from council <span style="font-weight:400;color:var(--muted);">(Individual Placement Agreement — needed to invoice)</span></label>
+      </div>
+      <div class="form-group"><label>IPA date received <span style="font-weight:400;color:var(--muted);">(optional)</span></label><input type="date" id="yp-ipa-date"></div>
+      <div class="form-group full"><label>Notes <span style="font-weight:400;color:var(--muted);">(optional — no names)</span></label><input type="text" id="yp-notes" maxlength="120" placeholder="e.g. solo placement, respite"></div>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" onclick="closeModal('yp-modal')">Cancel</button>
+      <button type="submit" class="btn btn-primary">Save</button>
     </div>
   </form>
 </div></div>
@@ -482,10 +554,11 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
 <script src="vendor/supabase.js"></script>
 <script>
 /* =================== State & storage =================== */
-let homes = [], bills = [], payments = [], settings = {};
-let editingBillId = null, editingHomeId = null;
+let homes = [], bills = [], payments = [], youngPeople = [], settings = {};
+let editingBillId = null, editingHomeId = null, editingYpId = null;
 let calMonth = '';   // YYYY-MM shown on calendar
-const LS = { homes: 'cfx-homes', bills: 'cfx-bills', payments: 'cfx-payments', settings: 'cfx-settings' };
+const schemaReady = { yp: true };   // set false if the young_people table / Ofsted columns aren't created yet
+const LS = { homes: 'cfx-homes', bills: 'cfx-bills', payments: 'cfx-payments', youngPeople: 'cfx-yp', settings: 'cfx-settings' };
 
 /* =================== Shared cloud database =================== */
 const SUPA_URL = 'https://dsvcfegwiqdbabywxnod.supabase.co';
@@ -493,13 +566,18 @@ const SUPA_KEY = 'sb_publishable_2peq2rE-7aAd3QTH1ESqzw_Vlt07Rlp';
 const db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 
 // camelCase (app) <-> snake_case (database) mapping
-const homeToRow = h => ({ id: h.id, name: h.name, city: h.city || '', manager: h.manager || '', bank: h.bank || '', monthly_budget: +h.monthlyBudget || 0, active: h.active !== false });
-const rowToHome = r => ({ id: r.id, name: r.name, city: r.city || '', manager: r.manager || '', bank: r.bank || '', monthlyBudget: +r.monthly_budget || 0, active: r.active !== false });
+const homeToRow = h => ({ id: h.id, name: h.name, city: h.city || '', manager: h.manager || '', bank: h.bank || '', monthly_budget: +h.monthlyBudget || 0, active: h.active !== false,
+  // The four Ofsted/residential columns only exist after the migration; sending them to an
+  // un-migrated database would reject the whole row, so include them only once schema is ready.
+  ...(schemaReady.yp ? { residential: !!h.residential, last_ofsted_date: h.lastOfstedDate || '', ofsted_rating: h.ofstedRating || '', next_ofsted_date: h.nextOfstedDate || '' } : {}) });
+const rowToHome = r => ({ id: r.id, name: r.name, city: r.city || '', manager: r.manager || '', bank: r.bank || '', monthlyBudget: +r.monthly_budget || 0, active: r.active !== false, residential: !!r.residential, lastOfstedDate: r.last_ofsted_date || '', ofstedRating: r.ofsted_rating || '', nextOfstedDate: r.next_ofsted_date || '' });
 const billToRow = b => ({ id: b.id, home: b.home, category: b.category, vendor: b.vendor || '', bank_account: b.bankAccount || '', frequency: b.frequency || 'Monthly', amount: b.amount == null ? '' : String(b.amount), next_due_date: b.nextDueDate || '', reminder_days: b.reminderDays || 7, status: b.status || 'Pending', notes: b.notes || '' });
 const rowToBill = r => ({ id: r.id, home: r.home, category: r.category, vendor: r.vendor || '', bankAccount: r.bank_account || '', frequency: r.frequency || 'Monthly', amount: r.amount || '', nextDueDate: r.next_due_date || '', reminderDays: r.reminder_days || 7, status: r.status || 'Pending', notes: r.notes || '' });
 const payToRow = p => ({ id: p.id, bill_id: p.billId || '', home: p.home || '', category: p.category || '', paid_date: p.paidDate || '', amount: p.amount == null ? '' : String(p.amount), method: p.method || '', notes: p.notes || '' });
 const rowToPay = r => ({ id: r.id, billId: r.bill_id || '', home: r.home || '', category: r.category || '', paidDate: r.paid_date || '', amount: r.amount || '', method: r.method || '', notes: r.notes || '' });
-const TABLE_MAP = { homes: [homeToRow, rowToHome], bills: [billToRow, rowToBill], payments: [payToRow, rowToPay] };
+const ypToRow = y => ({ id: y.id, initials: y.initials || '', home: y.home || '', council: y.council || '', date_in: y.dateIn || '', date_out: y.dateOut || '', ipa_received: !!y.ipaReceived, ipa_date: y.ipaDate || '', notes: y.notes || '' });
+const rowToYp = r => ({ id: r.id, initials: r.initials || '', home: r.home || '', council: r.council || '', dateIn: r.date_in || '', dateOut: r.date_out || '', ipaReceived: !!r.ipa_received, ipaDate: r.ipa_date || '', notes: r.notes || '' });
+const TABLE_MAP = { homes: [homeToRow, rowToHome], bills: [billToRow, rowToBill], payments: [payToRow, rowToPay], young_people: [ypToRow, rowToYp] };
 
 function dbUpsert(table, obj) {
   db.from(table).upsert(TABLE_MAP[table][0](obj)).then(({ error }) => { if (error) toast('⚠ Sync failed: ' + error.message); });
@@ -512,9 +590,9 @@ function dbDelete(table, id) {
   db.from(table).delete().eq('id', id).then(({ error }) => { if (error) toast('⚠ Sync failed: ' + error.message); });
 }
 async function dbClearAll() {
-  for (const t of ['payments', 'bills', 'homes']) {
+  for (const t of ['young_people', 'payments', 'bills', 'homes']) {
     const { error } = await db.from(t).delete().neq('id', '');
-    if (error) toast('⚠ ' + error.message);
+    if (error && !/does not exist|schema cache/i.test(error.message || '')) toast('⚠ ' + error.message);
   }
 }
 async function fetchAll() {
@@ -523,28 +601,40 @@ async function fetchAll() {
   ]);
   if (h.error || b.error || p.error) throw (h.error || b.error || p.error);
   homes = h.data.map(rowToHome); bills = b.data.map(rowToBill); payments = p.data.map(rowToPay);
+  // Young People + Ofsted columns are added by the same migration. Probe BOTH (an explicit
+  // column probe, since homes may be empty) and treat the feature as ready only if both exist.
+  const [y, hc] = await Promise.all([
+    db.from('young_people').select('*'),
+    db.from('homes').select('residential').limit(1)
+  ]);
+  schemaReady.yp = !y.error && !hc.error;
+  youngPeople = y.error ? [] : y.data.map(rowToYp);
   saveData();
 }
 
 function applyChange(table, payload) {
   const conv = TABLE_MAP[table][1];
-  const get = () => table === 'homes' ? homes : table === 'bills' ? bills : payments;
-  const set = a => { if (table === 'homes') homes = a; else if (table === 'bills') bills = a; else payments = a; };
+  const cur = table === 'homes' ? homes : table === 'bills' ? bills : table === 'payments' ? payments : youngPeople;
+  let next = cur;
   if (payload.eventType === 'DELETE') {
-    set(get().filter(x => x.id !== (payload.old && payload.old.id)));
+    next = cur.filter(x => x.id !== (payload.old && payload.old.id));
   } else {
     const obj = conv(payload.new);
-    const arr = get(); const i = arr.findIndex(x => x.id === obj.id);
-    if (i >= 0) arr[i] = obj; else arr.push(obj);
+    const i = cur.findIndex(x => x.id === obj.id);
+    if (i >= 0) cur[i] = obj; else cur.push(obj);
   }
+  if (table === 'homes') homes = next; else if (table === 'bills') bills = next;
+  else if (table === 'payments') payments = next; else youngPeople = next;
   saveData(); updateHomeFilters(); refreshAll();
 }
 function subscribeRealtime() {
-  db.channel('cf-live')
+  const ch = db.channel('cf-live')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'homes' }, p => applyChange('homes', p))
     .on('postgres_changes', { event: '*', schema: 'public', table: 'bills' }, p => applyChange('bills', p))
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, p => applyChange('payments', p))
-    .subscribe();
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, p => applyChange('payments', p));
+  // Only bind young_people once its table exists — binding a missing table can error the whole channel
+  if (schemaReady.yp) ch.on('postgres_changes', { event: '*', schema: 'public', table: 'young_people' }, p => applyChange('young_people', p));
+  ch.subscribe();
 }
 
 /* =================== Auth =================== */
@@ -575,6 +665,7 @@ function monthKey(d) { return d ? String(d).slice(0, 7) : ''; }
 function currentMonthKey() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
 function monthLabel(key) { const [y, m] = key.split('-'); return new Date(+y, +m - 1, 1).toLocaleString('en-GB', { month: 'long', year: 'numeric' }); }
 function monthLabelShort(key) { const [y, m] = key.split('-'); return new Date(+y, +m - 1, 1).toLocaleString('en-GB', { month: 'short' }); }
+function fmtDate(d) { if (!d) return ''; const [y, m, day] = String(d).slice(0, 10).split('-'); if (!day) return d; return new Date(+y, +m - 1, +day).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
 function money(n) { return '£' + (+n || 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function money0(n) { return '£' + Math.round(+n || 0).toLocaleString('en-GB'); }
 function amt(x) { return parseFloat(x) || 0; }
@@ -662,7 +753,7 @@ function seedData(demo) {
     { id: 'H002', name: 'Home 2', city: '', manager: '', bank: '', monthlyBudget: 0, active: true },
     { id: 'H003', name: 'Home 3', city: '', manager: '', bank: '', monthlyBudget: 0, active: true }
   ];
-  if (demo) homes.forEach(h => h.monthlyBudget = 3000);
+  if (demo) homes.forEach(h => { h.monthlyBudget = 3000; h.residential = true; });
   bills = []; payments = [];
   const today = todayISO();
   let bn = 0, pn = 0;
@@ -710,14 +801,16 @@ function loadData() {
     homes = JSON.parse(localStorage.getItem(LS.homes)) || [];
     bills = JSON.parse(localStorage.getItem(LS.bills)) || [];
     payments = JSON.parse(localStorage.getItem(LS.payments)) || [];
+    youngPeople = JSON.parse(localStorage.getItem(LS.youngPeople)) || [];
     settings = JSON.parse(localStorage.getItem(LS.settings)) || {};
-  } catch (e) { homes = []; bills = []; payments = []; settings = {}; }
+  } catch (e) { homes = []; bills = []; payments = []; youngPeople = []; settings = {}; }
   if (settings.defaultReminderDays == null) settings.defaultReminderDays = 7;
 }
 function saveData() {
   localStorage.setItem(LS.homes, JSON.stringify(homes));
   localStorage.setItem(LS.bills, JSON.stringify(bills));
   localStorage.setItem(LS.payments, JSON.stringify(payments));
+  localStorage.setItem(LS.youngPeople, JSON.stringify(youngPeople));
   localStorage.setItem(LS.settings, JSON.stringify(settings));
 }
 
@@ -730,6 +823,8 @@ function showTab(name) {
   if (name === 'calendar') renderCalendar();
   if (name === 'reports') renderReports();
   if (name === 'homes') renderHomes();
+  if (name === 'ofsted') renderOfsted();
+  if (name === 'young-people') renderYoungPeople();
   window.scrollTo(0, 0);
 }
 
@@ -806,11 +901,21 @@ function renderDashboard() {
 function jumpToOverdue() { showTab('bills'); document.getElementById('filter-status').value = 'Overdue'; document.getElementById('filter-month').value = 'All'; renderBills(); }
 
 /* =================== Bills =================== */
+function residentialHomes() { return homes.filter(h => h.residential && h.active); }
 function updateHomeFilters() {
   const options = homes.filter(h => h.active).map(h => `<option value="${esc(h.name)}">${esc(h.name)}</option>`).join('');
   document.getElementById('filter-home').innerHTML = '<option value="All">All Homes</option>' + options;
   document.getElementById('filter-payment-home').innerHTML = '<option value="All">All Homes</option>' + options;
   document.getElementById('bill-home').innerHTML = '<option value="">Select Home</option>' + options;
+  // Young People — only residential homes
+  const resOpts = residentialHomes().map(h => `<option value="${esc(h.name)}">${esc(h.name)}</option>`).join('');
+  const ypFilter = document.getElementById('yp-filter-home');
+  if (ypFilter) { const prev = ypFilter.value; ypFilter.innerHTML = '<option value="All">All Homes</option>' + resOpts; ypFilter.value = [...ypFilter.options].some(o => o.value === prev) ? prev : 'All'; }
+  const ypHome = document.getElementById('yp-home');
+  if (ypHome) ypHome.innerHTML = '<option value="">Select Home</option>' + resOpts;
+  // Council abbreviations seen so far (for quick re-entry)
+  const cl = document.getElementById('council-list');
+  if (cl) cl.innerHTML = [...new Set(youngPeople.map(y => y.council).filter(Boolean))].map(c => `<option>${esc(c)}</option>`).join('');
 }
 function updateMonthFilters() {
   const sel = document.getElementById('filter-month');
@@ -1213,9 +1318,10 @@ function renderHomes() {
     const budget = +h.monthlyBudget || 0;
     const pct = budget ? Math.min(100, Math.round(spent / budget * 100)) : 0;
     const pendingCount = bills.filter(b => b.home === h.name && b.status === 'Pending').length;
+    const currentYp = youngPeople.filter(y => y.home === h.name && ypIsCurrent(y)).length;
     return `<div class="home-card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
-        <div><h3>${esc(h.name)}</h3><span class="badge ${h.active ? 'green' : 'gray'}">${h.active ? 'Active' : 'Inactive'}</span></div>
+        <div><h3>${esc(h.name)}</h3><span class="badge ${h.active ? 'green' : 'gray'}">${h.active ? 'Active' : 'Inactive'}</span>${h.residential ? ' <span class="badge blue">Residential</span>' : ''}</div>
         <div class="actions">
           <button class="btn btn-secondary action-btn" onclick="editHome('${h.id}')">Edit</button>
           <button class="btn btn-danger action-btn" onclick="deleteHome('${h.id}')">🗑</button>
@@ -1223,6 +1329,8 @@ function renderHomes() {
       ${h.city ? `<p class="home-meta">📍 ${esc(h.city)}</p>` : ''}
       ${h.manager ? `<p class="home-meta">👤 ${esc(h.manager)}</p>` : ''}
       ${h.bank ? `<p class="home-meta">🏦 ${esc(h.bank)}</p>` : ''}
+      ${h.residential ? `<p class="home-meta">🧒 ${currentYp} young ${currentYp === 1 ? 'person' : 'people'} currently placed</p>
+      <p class="home-meta">🔎 Ofsted: ${h.ofstedRating ? esc(h.ofstedRating) : 'not recorded'}${h.lastOfstedDate ? ' · ' + fmtDate(h.lastOfstedDate) : ''}</p>` : ''}
       <p class="home-meta">📋 ${pendingCount} pending bills</p>
       <div style="margin-top:10px;">
         <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
@@ -1247,6 +1355,7 @@ function editHome(id) {
   document.getElementById('home-manager').value = h.manager || '';
   document.getElementById('home-bank').value = h.bank || '';
   document.getElementById('home-budget').value = h.monthlyBudget || '';
+  document.getElementById('home-residential').checked = !!h.residential;
   document.getElementById('home-modal').classList.add('show');
 }
 function saveHome(e) {
@@ -1257,17 +1366,241 @@ function saveHome(e) {
     manager: document.getElementById('home-manager').value,
     bank: document.getElementById('home-bank').value,
     monthlyBudget: parseFloat(document.getElementById('home-budget').value) || 0,
+    residential: document.getElementById('home-residential').checked,
     active: true
   };
-  let saved;
-  if (editingHomeId) { const i = homes.findIndex(h => h.id === editingHomeId); homes[i] = { ...homes[i], ...data }; saved = homes[i]; }
-  else { saved = { ...data, id: nextId('H', homes, 3) }; homes.push(saved); }
-  saveData(); dbUpsert('homes', saved); closeModal('home-modal'); updateHomeFilters(); refreshAll(); toast('Home saved');
+  let saved, renamedFrom = null;
+  if (editingHomeId) {
+    const i = homes.findIndex(h => h.id === editingHomeId);
+    const existing = homes[i];
+    if (existing.residential && !data.residential) {
+      const cur = youngPeople.filter(y => y.home === existing.name && ypIsCurrent(y)).length;
+      if (cur > 0 && !confirm(`${existing.name} still has ${cur} current young ${cur === 1 ? 'person' : 'people'}. Removing “residential” will hide it from the Ofsted and Young People tabs. Continue?`)) return;
+    }
+    if (existing.name !== data.name) renamedFrom = existing.name;
+    homes[i] = { ...existing, ...data }; saved = homes[i];
+  } else { saved = { ...data, id: nextId('H', homes, 3) }; homes.push(saved); }
+  saveData(); dbUpsert('homes', saved); closeModal('home-modal'); updateHomeFilters(); refreshAll();
+  if (renamedFrom) cascadeHomeRename(renamedFrom, saved.name); else toast('Home saved');
+}
+// Records store the home by NAME (like bills/payments), so a rename must follow through to them
+async function cascadeHomeRename(oldName, newName) {
+  bills.forEach(b => { if (b.home === oldName) b.home = newName; });
+  payments.forEach(p => { if (p.home === oldName) p.home = newName; });
+  youngPeople.forEach(y => { if (y.home === oldName) y.home = newName; });
+  saveData(); updateHomeFilters(); refreshAll();
+  for (const t of ['bills', 'payments', 'young_people']) {
+    const { error } = await db.from(t).update({ home: newName }).eq('home', oldName);
+    if (error && !/does not exist|schema cache/i.test(error.message || '')) toast('⚠ ' + error.message);
+  }
+  toast('Home renamed — linked bills, payments & young people updated');
 }
 function deleteHome(id) {
   if (!confirm('Delete this home? Its bills stay in the list.')) return;
   homes = homes.filter(h => h.id !== id);
   saveData(); dbDelete('homes', id); updateHomeFilters(); refreshAll(); toast('Home deleted');
+}
+
+/* =================== Ofsted & Young People =================== */
+// One-time database update that adds the Ofsted columns + young_people table.
+const MIGRATION_SQL = [
+  "-- Caring Feathers — add Ofsted tracking + Young People",
+  "alter table homes add column if not exists residential boolean default false;",
+  "alter table homes add column if not exists last_ofsted_date text default '';",
+  "alter table homes add column if not exists ofsted_rating text default '';",
+  "alter table homes add column if not exists next_ofsted_date text default '';",
+  "update homes set residential = true where residential is not true and name ilike '%lodge%';",
+  "",
+  "create table if not exists young_people (",
+  "  id text primary key,",
+  "  initials text default '', home text default '', council text default '',",
+  "  date_in text default '', date_out text default '',",
+  "  ipa_received boolean default false, ipa_date text default '',",
+  "  notes text default '', updated_at timestamptz default now()",
+  ");",
+  "alter table young_people add column if not exists ipa_received boolean default false;",
+  "alter table young_people add column if not exists ipa_date text default '';",
+  "alter table young_people enable row level security;",
+  "drop policy if exists \"team can do everything\" on young_people;",
+  "create policy \"team can do everything\" on young_people for all to authenticated using (true) with check (true);",
+  "do $$ begin",
+  "  begin alter publication supabase_realtime add table young_people; exception when duplicate_object then null; end;",
+  "end $$;"
+].join("\n");
+function showSqlFallback() { window.prompt('Copy this, paste into the Supabase SQL editor, and press Run:', MIGRATION_SQL); }
+function copyMigrationSql() {
+  const open = () => window.open('https://supabase.com/dashboard/project/dsvcfegwiqdbabywxnod/sql/new', '_blank');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(MIGRATION_SQL).then(
+      () => { toast('✓ Copied — paste into Supabase and press Run'); open(); },
+      () => { open(); showSqlFallback(); });
+  } else { open(); showSqlFallback(); }
+}
+function setupBannerHTML() {
+  return `<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:16px;margin-bottom:16px;">
+    <strong style="color:var(--blue);">One-time setup needed</strong>
+    <p style="font-size:13px;color:var(--muted);margin:6px 0 12px;">This feature needs a quick database update (it adds storage for Ofsted &amp; Young People). Only needs doing once, by the administrator.</p>
+    <button class="btn btn-primary" onclick="copyMigrationSql()">Copy update &amp; open Supabase</button>
+    <p style="font-size:12px;color:var(--muted);margin-top:10px;">In Supabase: <strong>SQL Editor → paste → Run</strong>, then reload this app.</p>
+  </div>`;
+}
+
+const OFSTED_RATINGS = ['', 'Outstanding', 'Good', 'Requires improvement', 'Inadequate'];
+function renderOfstedSummary() {
+  const summary = document.getElementById('ofsted-summary');
+  const resHomes = homes.filter(h => h.residential);
+  if (!resHomes.length) { summary.innerHTML = ''; return; }
+  const recorded = resHomes.filter(h => h.lastOfstedDate).length;
+  const overdueInsp = resHomes.filter(h => h.nextOfstedDate && daysUntil(h.nextOfstedDate) < 0);
+  const dueSoonInsp = resHomes.filter(h => h.nextOfstedDate && daysUntil(h.nextOfstedDate) >= 0 && daysUntil(h.nextOfstedDate) <= 60);
+  summary.innerHTML = `<div><strong>${resHomes.length}</strong> residential home${resHomes.length === 1 ? '' : 's'}</div>
+    <div>Inspection recorded: <strong>${recorded}/${resHomes.length}</strong></div>
+    ${overdueInsp.length ? `<div style="color:var(--red);">⚠ ${overdueInsp.length} next-inspection date${overdueInsp.length === 1 ? '' : 's'} passed</div>` : ''}
+    ${dueSoonInsp.length ? `<div style="color:#b45309;">${dueSoonInsp.length} due within 60 days</div>` : ''}`;
+}
+function renderOfsted() {
+  document.getElementById('ofsted-setup').innerHTML = schemaReady.yp ? '' : setupBannerHTML();
+  const body = document.getElementById('ofsted-tbody');
+  const resHomes = homes.filter(h => h.residential);
+  renderOfstedSummary();
+  if (!resHomes.length) {
+    body.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:22px;">No residential homes yet. Go to <strong>Homes</strong>, edit a home and tick “This is a residential children's home”.</td></tr>`;
+    return;
+  }
+  const disabled = schemaReady.yp ? '' : 'disabled';
+  const iStyle = 'padding:7px 9px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;';
+  body.innerHTML = resHomes.map(h => {
+    const nextD = h.nextOfstedDate ? daysUntil(h.nextOfstedDate) : null;
+    const nextBadge = nextD == null ? '' : nextD < 0 ? ' <span class="badge red">overdue</span>' : nextD <= 60 ? ` <span class="badge orange">${nextD}d</span>` : '';
+    const ratingOpts = OFSTED_RATINGS.map(r => `<option value="${r}"${r === (h.ofstedRating || '') ? ' selected' : ''}>${r || '— not set —'}</option>`).join('');
+    return `<tr>
+      <td><strong>${esc(h.name)}</strong></td>
+      <td><input type="date" value="${h.lastOfstedDate || ''}" ${disabled} style="${iStyle}" onchange="saveOfstedField('${h.id}','lastOfstedDate',this.value)"></td>
+      <td><select ${disabled} style="${iStyle}" onchange="saveOfstedField('${h.id}','ofstedRating',this.value)">${ratingOpts}</select></td>
+      <td><input type="date" value="${h.nextOfstedDate || ''}" ${disabled} style="${iStyle}" onchange="saveOfstedField('${h.id}','nextOfstedDate',this.value)">${nextBadge}</td>
+    </tr>`;
+  }).join('');
+}
+function saveOfstedField(homeId, field, value) {
+  const h = homes.find(x => x.id === homeId);
+  if (!h) return;
+  h[field] = value;
+  saveData(); dbUpsert('homes', h);
+  // Full rebuild only when the next-due date changed (its badge needs refreshing); otherwise
+  // just update the summary so the date/rating input the user is on keeps focus.
+  if (field === 'nextOfstedDate') renderOfsted(); else renderOfstedSummary();
+  if (!document.getElementById('homes-tab').classList.contains('hidden')) renderHomes();
+  toast('Ofsted details saved');
+}
+
+// "Current" = no move-out date, OR a move-out date still in the future (planned discharge)
+function ypIsCurrent(y) { return !y.dateOut || y.dateOut > todayISO(); }
+function ypStatus(y) { return ypIsCurrent(y) ? 'Current' : 'Left'; }
+function renderYoungPeople() {
+  document.getElementById('yp-setup').innerHTML = schemaReady.yp ? '' : setupBannerHTML();
+  document.getElementById('yp-add-btn').disabled = !schemaReady.yp;
+  const fHome = document.getElementById('yp-filter-home').value;
+  const fStatus = document.getElementById('yp-filter-status').value;
+  const q = document.getElementById('yp-search').value.trim().toLowerCase();
+  const list = youngPeople.filter(y => {
+    if (fHome !== 'All' && y.home !== fHome) return false;
+    if (fStatus === 'AwaitingIPA') { if (!ypIsCurrent(y) || y.ipaReceived) return false; }
+    else if (fStatus !== 'All' && ypStatus(y) !== fStatus) return false;
+    if (q && !(`${y.initials} ${y.council} ${y.home} ${y.notes}`.toLowerCase().includes(q))) return false;
+    return true;
+  }).sort((a, b) => (b.dateIn || '').localeCompare(a.dateIn || ''));
+  const currentTotal = youngPeople.filter(ypIsCurrent).length;
+  const awaitingIpa = youngPeople.filter(y => ypIsCurrent(y) && !y.ipaReceived).length;
+  document.getElementById('yp-summary').innerHTML =
+    `<div><strong>${currentTotal}</strong> currently placed (all homes)</div>
+     <div>Showing: <strong>${list.length}</strong> record${list.length === 1 ? '' : 's'}</div>
+     ${awaitingIpa ? `<div style="color:#b45309;">⚠ ${awaitingIpa} awaiting IPA from council</div>` : ''}`;
+  const tbody = document.getElementById('yp-tbody');
+  if (!youngPeople.length) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:22px;">No young people recorded yet.${schemaReady.yp ? ' Use “+ Add Young Person”.' : ' Complete the one-time setup above first.'}</td></tr>`;
+    return;
+  }
+  if (!list.length) { tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--muted);">None match these filters.</td></tr>`; return; }
+  tbody.innerHTML = list.map(y => {
+    const current = ypIsCurrent(y);
+    let stay = '';
+    if (current && !y.dateOut && y.dateIn) {
+      const inD = new Date(y.dateIn + 'T00:00:00');
+      const nowD = new Date(new Date().toDateString());
+      const days = Math.max(0, Math.floor((nowD - inD) / 86400000));
+      stay = days <= 0 ? 'today' : days >= 61 ? Math.round(days / 30.44) + ' mo' : days + ' d';
+    }
+    const statusBadge = current
+      ? `<span class="badge green">Current${y.dateOut ? ' · leaving ' + fmtDate(y.dateOut) : (stay ? ' · ' + stay : '')}</span>`
+      : '<span class="badge gray">Moved out</span>';
+    const ipa = y.ipaReceived
+      ? `<span class="badge green" title="${y.ipaDate ? 'Received ' + fmtDate(y.ipaDate) : 'Received'}">✓ Received</span>`
+      : '<span class="badge orange">Awaited</span>';
+    return `<tr>
+      <td><strong>${esc(y.initials)}</strong>${y.notes ? ` <span title="${esc(y.notes)}">📝</span>` : ''}</td>
+      <td>${esc(y.home)}</td>
+      <td>${esc(y.council) || '—'}</td>
+      <td>${fmtDate(y.dateIn) || '—'}</td>
+      <td>${y.dateOut ? fmtDate(y.dateOut) : '—'}</td>
+      <td>${ipa}</td>
+      <td>${statusBadge}</td>
+      <td><div class="actions">
+        <button class="btn btn-secondary action-btn" onclick="editYp('${y.id}')">Edit</button>
+        <button class="btn btn-danger action-btn" onclick="deleteYp('${y.id}')">🗑</button>
+      </div></td></tr>`;
+  }).join('');
+}
+function showAddYpModal() {
+  if (!schemaReady.yp) { renderYoungPeople(); toast('Please complete the one-time setup first'); return; }
+  if (!residentialHomes().length) { toast('Add a residential home first (Homes → tick “residential”)'); return; }
+  editingYpId = null;
+  document.getElementById('yp-modal-title').textContent = 'Add Young Person';
+  document.getElementById('yp-form').reset();
+  updateHomeFilters();
+  document.getElementById('yp-modal').classList.add('show');
+}
+function editYp(id) {
+  const y = youngPeople.find(x => x.id === id); if (!y) return;
+  editingYpId = id;
+  document.getElementById('yp-modal-title').textContent = 'Edit Young Person';
+  updateHomeFilters();
+  const homeSel = document.getElementById('yp-home');
+  if (y.home && ![...homeSel.options].some(o => o.value === y.home)) homeSel.insertAdjacentHTML('beforeend', `<option value="${esc(y.home)}">${esc(y.home)}</option>`);
+  document.getElementById('yp-initials').value = y.initials || '';
+  homeSel.value = y.home || '';
+  document.getElementById('yp-council').value = y.council || '';
+  document.getElementById('yp-in').value = y.dateIn || '';
+  document.getElementById('yp-out').value = y.dateOut || '';
+  document.getElementById('yp-ipa').checked = !!y.ipaReceived;
+  document.getElementById('yp-ipa-date').value = y.ipaDate || '';
+  document.getElementById('yp-notes').value = y.notes || '';
+  document.getElementById('yp-modal').classList.add('show');
+}
+function saveYp(e) {
+  e.preventDefault();
+  const dateIn = document.getElementById('yp-in').value;
+  const dateOut = document.getElementById('yp-out').value;
+  if (dateOut && dateIn && dateOut < dateIn) { alert('The moved-out date cannot be before the moved-in date.'); return; }
+  const data = {
+    initials: document.getElementById('yp-initials').value.trim(),
+    home: document.getElementById('yp-home').value,
+    council: document.getElementById('yp-council').value.trim(),
+    dateIn, dateOut,
+    ipaReceived: document.getElementById('yp-ipa').checked,
+    ipaDate: document.getElementById('yp-ipa-date').value,
+    notes: document.getElementById('yp-notes').value.trim()
+  };
+  let saved;
+  if (editingYpId) { const i = youngPeople.findIndex(y => y.id === editingYpId); youngPeople[i] = { ...youngPeople[i], ...data }; saved = youngPeople[i]; }
+  // Collision-resistant id: two people adding at once must not mint the same id and overwrite a record
+  else { saved = { ...data, id: 'YP' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5) }; youngPeople.push(saved); }
+  saveData(); dbUpsert('young_people', saved); closeModal('yp-modal'); updateHomeFilters(); refreshAll(); toast('Young person saved');
+}
+function deleteYp(id) {
+  const y = youngPeople.find(x => x.id === id);
+  if (!confirm(`Remove the record for ${y ? y.initials : 'this young person'}? This deletes it for the whole team.`)) return;
+  youngPeople = youngPeople.filter(x => x.id !== id);
+  saveData(); dbDelete('young_people', id); refreshAll(); toast('Record deleted');
 }
 
 /* =================== Settings / notifications / backup =================== */
@@ -1328,8 +1661,9 @@ function saveSettings() {
   saveData(); toast('Settings saved');
 }
 function exportBackup() {
+  if (youngPeople.length && !confirm('This backup file will contain Young People safeguarding records (initials, home, council, dates, notes). Save it somewhere secure and delete it when no longer needed. Continue?')) return;
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([JSON.stringify({ homes, bills, payments, settings, exported: todayISO() }, null, 2)], { type: 'application/json' }));
+  a.href = URL.createObjectURL(new Blob([JSON.stringify({ homes, bills, payments, youngPeople, settings, exported: todayISO() }, null, 2)], { type: 'application/json' }));
   a.download = 'caring-feathers-backup-' + todayISO() + '.json'; a.click(); URL.revokeObjectURL(a.href);
   toast('Backup downloaded');
 }
@@ -1344,8 +1678,9 @@ function importBackup(ev) {
       if (!confirm(`Import backup from ${data.exported || 'unknown date'}? This replaces the shared data for EVERYONE on the team.`)) return;
       toast('Importing…');
       await dbClearAll();
-      homes = data.homes; bills = data.bills; payments = data.payments || []; settings = data.settings || settings;
+      homes = data.homes; bills = data.bills; payments = data.payments || []; youngPeople = data.youngPeople || []; settings = data.settings || settings;
       await dbUpsertMany('homes', homes); await dbUpsertMany('bills', bills); await dbUpsertMany('payments', payments);
+      if (youngPeople.length) await dbUpsertMany('young_people', youngPeople);
       saveData(); updateHomeFilters(); updateMonthFilters(); refreshAll(); refreshNotifyUI();
       toast('Backup imported ✓ — now shared with the team');
     } catch (err) { alert('Could not import: ' + err.message); }
@@ -1370,6 +1705,8 @@ function refreshAll() {
   if (!document.getElementById('calendar-tab').classList.contains('hidden')) renderCalendar();
   if (!document.getElementById('reports-tab').classList.contains('hidden')) renderReports();
   if (!document.getElementById('homes-tab').classList.contains('hidden')) renderHomes();
+  if (!document.getElementById('ofsted-tab').classList.contains('hidden')) renderOfsted();
+  if (!document.getElementById('young-people-tab').classList.contains('hidden')) renderYoungPeople();
 }
 async function init() {
   loadData();

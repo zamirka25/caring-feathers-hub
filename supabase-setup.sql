@@ -9,6 +9,23 @@ create table if not exists homes (
   bank text default '',
   monthly_budget numeric default 0,
   active boolean default true,
+  residential boolean default false,
+  last_ofsted_date text default '',
+  ofsted_rating text default '',
+  next_ofsted_date text default '',
+  updated_at timestamptz default now()
+);
+
+create table if not exists young_people (
+  id text primary key,
+  initials text default '',
+  home text default '',
+  council text default '',
+  date_in text default '',
+  date_out text default '',
+  ipa_received boolean default false,
+  ipa_date text default '',
+  notes text default '',
   updated_at timestamptz default now()
 );
 
@@ -43,14 +60,17 @@ create table if not exists payments (
 alter table homes enable row level security;
 alter table bills enable row level security;
 alter table payments enable row level security;
+alter table young_people enable row level security;
 
 drop policy if exists "team can do everything" on homes;
 drop policy if exists "team can do everything" on bills;
 drop policy if exists "team can do everything" on payments;
+drop policy if exists "team can do everything" on young_people;
 
 create policy "team can do everything" on homes for all to authenticated using (true) with check (true);
 create policy "team can do everything" on bills for all to authenticated using (true) with check (true);
 create policy "team can do everything" on payments for all to authenticated using (true) with check (true);
+create policy "team can do everything" on young_people for all to authenticated using (true) with check (true);
 
 -- Live sync: broadcast changes to all connected devices
 do $$
@@ -65,6 +85,10 @@ begin
   end;
   begin
     alter publication supabase_realtime add table payments;
+  exception when duplicate_object then null;
+  end;
+  begin
+    alter publication supabase_realtime add table young_people;
   exception when duplicate_object then null;
   end;
 end $$;
