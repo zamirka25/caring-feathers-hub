@@ -404,7 +404,7 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
       </div>
       <div class="section">
         <h2>ℹ️ About</h2>
-        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;"><strong>Caring Feathers Finance Hub — version 2.4</strong> (12 July 2026)<br>
+        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;"><strong>Caring Feathers Finance Hub — version 2.5</strong> (12 July 2026)<br>
         Shared team data with live sync · recurring-bill forecast · Ofsted &amp; Young People tracking (incl. council + IPA) · phone notifications.</p>
       </div>
     </div>
@@ -1737,7 +1737,22 @@ async function startApp() {
   document.getElementById('setting-reminder').value = settings.defaultReminderDays || 7;
   renderDashboard(); renderBills(); renderPayments(); renderHomes(); refreshNotifyUI();
   setTimeout(notifyDueBills, 1500);
-  if (cloudOK) subscribeRealtime();
+  if (cloudOK) { subscribeRealtime(); attachAutoRefresh(); }
+}
+// Re-pull the shared data whenever the app is reopened or refocused. Installed apps (PWAs)
+// "resume" instead of reloading, so without this a colleague can sit on a stale copy.
+let _lastSync = 0, _autoRefreshOn = false;
+function attachAutoRefresh() {
+  if (_autoRefreshOn) return; _autoRefreshOn = true;
+  _lastSync = Date.now();
+  const resync = () => {
+    if (document.visibilityState !== 'visible') return;
+    if (Date.now() - _lastSync < 15000) return;
+    _lastSync = Date.now();
+    fetchAll().then(() => { updateHomeFilters(); updateMonthFilters(); refreshAll(); refreshNotifyUI(); }).catch(() => {});
+  };
+  document.addEventListener('visibilitychange', resync);
+  window.addEventListener('focus', resync);
 }
 window.onload = init;
 </script>
