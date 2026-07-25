@@ -195,6 +195,7 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
     <button class="nav-link" data-tab="calendar" onclick="showTab('calendar')"><span class="nav-icon">📅</span> Calendar</button>
     <button class="nav-link" data-tab="payments" onclick="showTab('payments')"><span class="nav-icon">💳</span> Payments</button>
     <button class="nav-link" data-tab="petty-cash" onclick="showTab('petty-cash')"><span class="nav-icon">💷</span> Petty Cash</button>
+    <button class="nav-link" data-tab="building-works" onclick="showTab('building-works')"><span class="nav-icon">🔨</span> Building Works</button>
     <button class="nav-link" data-tab="reports" onclick="showTab('reports')"><span class="nav-icon">📊</span> Reports</button>
     <button class="nav-link" data-tab="homes" onclick="showTab('homes')"><span class="nav-icon">🏡</span> Homes</button>
     <button class="nav-link" data-tab="ofsted" onclick="showTab('ofsted')"><span class="nav-icon">🔎</span> Ofsted</button>
@@ -311,6 +312,28 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
       </div>
     </div>
 
+    <!-- ============ BUILDING WORKS ============ -->
+    <div id="building-works-tab" class="tab-content hidden">
+      <div class="section">
+        <div class="section-head"><h2>🔨 Building Works</h2><button class="btn btn-primary" onclick="showBwModal()">+ Add Building Work</button></div>
+        <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">One-off jobs: repairs, renovations, maintenance. Each job is counted once in the monthly totals and reports, never on top of them.</p>
+        <div class="filters">
+          <input type="search" id="bw-search" placeholder="🔍 Search job or contractor…" oninput="renderBuildingWorks()">
+          <select id="bw-filter-home" onchange="renderBuildingWorks()"><option value="All">All Homes</option></select>
+          <select id="bw-filter-status" onchange="renderBuildingWorks()">
+            <option value="All">All Status</option><option value="Pending">To pay</option><option value="Paid">Paid</option>
+          </select>
+        </div>
+        <div class="summary-bar" id="bw-summary"></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Home</th><th>Job</th><th>Contractor</th><th>Amount</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="bw-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- ============ REPORTS ============ -->
     <div id="reports-tab" class="tab-content hidden">
       <div class="section no-print">
@@ -422,8 +445,8 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
       </div>
       <div class="section">
         <h2>ℹ️ About</h2>
-        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;"><strong>Caring Feathers Finance Hub — version 2.6</strong> (25 July 2026)<br>
-        Shared team data with live sync · recurring-bill forecast · petty cash accounts · Ofsted &amp; Young People tracking (incl. council + IPA) · phone notifications.</p>
+        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;"><strong>Caring Feathers Finance Hub — version 2.7</strong> (25 July 2026)<br>
+        Shared team data with live sync · recurring-bill forecast · petty cash accounts · building works · Ofsted &amp; Young People tracking (incl. council + IPA) · phone notifications.</p>
       </div>
     </div>
 
@@ -437,6 +460,7 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
   <button class="nav-link" data-tab="calendar" onclick="showTab('calendar')"><span class="nav-icon">📅</span>Calendar</button>
   <button class="nav-link" data-tab="payments" onclick="showTab('payments')"><span class="nav-icon">💳</span>Pay</button>
   <button class="nav-link" data-tab="petty-cash" onclick="showTab('petty-cash')"><span class="nav-icon">💷</span>Petty</button>
+  <button class="nav-link" data-tab="building-works" onclick="showTab('building-works')"><span class="nav-icon">🔨</span>Works</button>
   <button class="nav-link" data-tab="reports" onclick="showTab('reports')"><span class="nav-icon">📊</span>Reports</button>
   <button class="nav-link" data-tab="homes" onclick="showTab('homes')"><span class="nav-icon">🏡</span>Homes</button>
   <button class="nav-link" data-tab="ofsted" onclick="showTab('ofsted')"><span class="nav-icon">🔎</span>Ofsted</button>
@@ -451,7 +475,7 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
     <div class="form-grid">
       <div class="form-group"><label>Home *</label><select id="bill-home" required></select></div>
       <div class="form-group"><label>Category *</label><input type="text" id="bill-category" list="category-list" required><datalist id="category-list">
-        <option>Petty Cash</option><option>Gas & Electric</option><option>Water</option><option>Internet</option><option>Council Tax</option><option>Rent</option><option>Ofsted Fees</option><option>Training Hub</option><option>Agency Fee</option><option>Insurance</option><option>Maintenance</option><option>Food Shopping</option><option>Payroll</option><option>Vehicle</option></datalist></div>
+        <option>Petty Cash</option><option>Gas & Electric</option><option>Water</option><option>Internet</option><option>Council Tax</option><option>Rent</option><option>Ofsted Fees</option><option>Training Hub</option><option>Agency Fee</option><option>Insurance</option><option>Maintenance</option><option>Building Works</option><option>Food Shopping</option><option>Payroll</option><option>Vehicle</option></datalist></div>
       <div class="form-group"><label>Vendor</label><input type="text" id="bill-vendor"></div>
       <div class="form-group"><label>Bank Account *</label><input type="text" id="bill-bank" list="bank-list" required><datalist id="bank-list"><option>Barclays</option><option>Monzo</option><option>Wise</option><option>Starling</option><option>Revolut</option></datalist></div>
       <div class="form-group"><label>Frequency</label><select id="bill-frequency">
@@ -522,6 +546,29 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
     <div class="form-actions">
       <button type="button" class="btn btn-secondary" onclick="closeModal('home-modal')">Cancel</button>
       <button type="submit" class="btn btn-primary">Save Home</button>
+    </div>
+  </form>
+</div></div>
+
+<div id="bw-modal" class="modal"><div class="modal-content">
+  <h2 id="bw-modal-title">Add Building Work</h2>
+  <form id="bw-form" onsubmit="saveBw(event)">
+    <div class="form-grid">
+      <div class="form-group"><label>Home *</label><select id="bw-home" required></select></div>
+      <div class="form-group"><label>Contractor</label><input type="text" id="bw-contractor" placeholder="e.g. Fast Bond Maintenance"></div>
+      <div class="form-group full"><label>What is the job? *</label><input type="text" id="bw-job" maxlength="100" placeholder="e.g. New boiler, roof repair, repaint lounge" required></div>
+      <div class="form-group"><label>Amount (£) *</label><input type="number" id="bw-amount" step="0.01" min="0" required></div>
+      <div class="form-group"><label>Date *</label><input type="date" id="bw-date" required></div>
+      <div class="form-group full" id="bw-paid-wrap" style="flex-direction:row;align-items:center;gap:8px;background:#f8f9fb;padding:10px 12px;border-radius:8px;">
+        <input type="checkbox" id="bw-paid" style="width:18px;height:18px;flex:none;" onchange="document.getElementById('bw-method-wrap').style.display=this.checked?'flex':'none'">
+        <label for="bw-paid" style="margin:0;font-weight:600;">Already paid <span style="font-weight:400;color:var(--muted);">(records the payment straight away)</span></label>
+      </div>
+      <div class="form-group full" id="bw-method-wrap" style="display:none;"><label>Payment Method</label><select id="bw-method">
+        <option value="">Select Method</option><option>Bank Transfer</option><option>Card</option><option>Direct Debit</option><option>Cash</option></select></div>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" onclick="closeModal('bw-modal')">Cancel</button>
+      <button type="submit" class="btn btn-primary">Save</button>
     </div>
   </form>
 </div></div>
@@ -867,6 +914,7 @@ function showTab(name) {
   if (name === 'ofsted') renderOfsted();
   if (name === 'young-people') renderYoungPeople();
   if (name === 'petty-cash') renderPettyCash();
+  if (name === 'building-works') renderBuildingWorks();
   window.scrollTo(0, 0);
 }
 
@@ -1645,6 +1693,108 @@ function deleteYp(id) {
   saveData(); dbDelete('young_people', id); refreshAll(); toast('Record deleted');
 }
 
+/* =================== Building Works =================== */
+// A building work IS a normal one-off bill (category "Building Works") plus its payment,
+// so it lands in every total exactly once. This page is just a purpose-built view of them.
+function isBuildingWork(x) { return /building\s*works?/i.test(x.category || ''); }
+let editingBwId = null;
+function renderBuildingWorks() {
+  const homeSel = document.getElementById('bw-filter-home');
+  const prev = homeSel.value;
+  homeSel.innerHTML = '<option value="All">All Homes</option>' + homes.filter(h => h.active).map(h => `<option value="${esc(h.name)}">${esc(h.name)}</option>`).join('');
+  homeSel.value = [...homeSel.options].some(o => o.value === prev) ? prev : 'All';
+  const fHome = homeSel.value;
+  const fStatus = document.getElementById('bw-filter-status').value;
+  const q = document.getElementById('bw-search').value.trim().toLowerCase();
+  const works = bills.filter(isBuildingWork).filter(b => {
+    if (fHome !== 'All' && b.home !== fHome) return false;
+    if (fStatus !== 'All' && b.status !== fStatus) return false;
+    if (q && !(`${b.notes} ${b.vendor} ${b.home}`.toLowerCase().includes(q))) return false;
+    return true;
+  }).sort((a, b) => (b.nextDueDate || '').localeCompare(a.nextDueDate || ''));
+  const year = String(new Date().getFullYear());
+  const spentThisYear = payments.filter(p => isBuildingWork(p) && (p.paidDate || '').startsWith(year)).reduce((s, p) => s + amt(p.amount), 0);
+  const toPay = bills.filter(b => isBuildingWork(b) && b.status === 'Pending');
+  document.getElementById('bw-summary').innerHTML =
+    `<div>Spent this year: <strong>${money(spentThisYear)}</strong></div>
+     <div>Still to pay: <strong style="color:var(--red);">${money(sumAmounts(toPay))}</strong> (${toPay.length} job${toPay.length === 1 ? '' : 's'})</div>
+     <div>Showing: <strong>${works.length}</strong> job${works.length === 1 ? '' : 's'}</div>`;
+  const tbody = document.getElementById('bw-tbody');
+  tbody.innerHTML = works.length ? works.map(b => `<tr>
+      <td><strong>${esc(b.home)}</strong></td>
+      <td>${esc(b.notes) || '—'}</td>
+      <td>${esc(b.vendor) || '—'}</td>
+      <td>${b.amount ? '<strong>' + money(b.amount) + '</strong>' : '—'}</td>
+      <td><small>${fmtDate(b.nextDueDate) || '—'}</small></td>
+      <td>${getBillStatusBadge(b)}</td>
+      <td><div class="actions">
+        ${b.status === 'Pending' ? `<button class="btn btn-success action-btn" onclick="openPayModal('${b.id}')">✓ Pay</button>` : ''}
+        <button class="btn btn-secondary action-btn" onclick="showBwModal('${b.id}')">Edit</button>
+        <button class="btn btn-danger action-btn" onclick="deleteBw('${b.id}')">🗑</button>
+      </div></td></tr>`).join('') :
+    '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:22px;">No building works recorded yet. Use "+ Add Building Work".</td></tr>';
+}
+function showBwModal(billId) {
+  editingBwId = billId || null;
+  document.getElementById('bw-form').reset();
+  document.getElementById('bw-home').innerHTML = '<option value="">Select Home</option>' + homes.filter(h => h.active).map(h => `<option value="${esc(h.name)}">${esc(h.name)}</option>`).join('');
+  document.getElementById('bw-method-wrap').style.display = 'none';
+  document.getElementById('bw-paid-wrap').style.display = billId ? 'none' : 'flex';
+  if (billId) {
+    const b = bills.find(x => x.id === billId); if (!b) return;
+    document.getElementById('bw-modal-title').textContent = 'Edit Building Work';
+    const sel = document.getElementById('bw-home');
+    if (b.home && ![...sel.options].some(o => o.value === b.home)) sel.insertAdjacentHTML('beforeend', `<option value="${esc(b.home)}">${esc(b.home)}</option>`);
+    sel.value = b.home || '';
+    document.getElementById('bw-contractor').value = b.vendor || '';
+    document.getElementById('bw-job').value = b.notes || '';
+    document.getElementById('bw-amount').value = b.amount || '';
+    document.getElementById('bw-date').value = b.nextDueDate || '';
+  } else {
+    document.getElementById('bw-modal-title').textContent = 'Add Building Work';
+    document.getElementById('bw-date').value = todayISO();
+  }
+  document.getElementById('bw-modal').classList.add('show');
+}
+function saveBw(e) {
+  e.preventDefault();
+  const data = {
+    home: document.getElementById('bw-home').value,
+    category: 'Building Works',
+    vendor: document.getElementById('bw-contractor').value.trim(),
+    notes: document.getElementById('bw-job').value.trim(),
+    amount: document.getElementById('bw-amount').value,
+    nextDueDate: document.getElementById('bw-date').value,
+    frequency: 'Ad-hoc', reminderDays: 7
+  };
+  if (editingBwId) {
+    const i = bills.findIndex(b => b.id === editingBwId);
+    bills[i] = { ...bills[i], ...data };
+    saveData(); dbUpsert('bills', bills[i]);
+    closeModal('bw-modal'); refreshAll(); toast('Building work updated');
+    return;
+  }
+  const alreadyPaid = document.getElementById('bw-paid').checked;
+  const bill = { ...data, id: nextId('B', bills, 4), bankAccount: '', status: alreadyPaid ? 'Paid' : 'Pending' };
+  bills.push(bill);
+  dbUpsert('bills', bill);
+  if (alreadyPaid) {
+    const pay = { id: 'P' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), billId: bill.id,
+      home: bill.home, category: 'Building Works', paidDate: bill.nextDueDate, amount: bill.amount,
+      method: document.getElementById('bw-method').value, notes: bill.notes };
+    payments.push(pay);
+    dbUpsert('payments', pay);
+  }
+  saveData(); closeModal('bw-modal'); refreshAll();
+  toast(alreadyPaid ? 'Building work recorded as paid' : 'Building work added, showing as to-pay');
+}
+function deleteBw(id) {
+  const b = bills.find(x => x.id === id);
+  if (!confirm(`Delete "${b ? (b.notes || 'this job') : 'this job'}"? Any payment already recorded for it stays in the payment history.`)) return;
+  bills = bills.filter(x => x.id !== id);
+  saveData(); dbDelete('bills', id); refreshAll(); toast('Building work deleted');
+}
+
 /* =================== Petty Cash =================== */
 const PC_MIGRATION_SQL = [
   "alter table homes add column if not exists pc_account_name text default '';",
@@ -1875,6 +2025,7 @@ function refreshAll() {
   if (!document.getElementById('ofsted-tab').classList.contains('hidden')) renderOfsted();
   if (!document.getElementById('young-people-tab').classList.contains('hidden')) renderYoungPeople();
   if (!document.getElementById('petty-cash-tab').classList.contains('hidden')) renderPettyCash();
+  if (!document.getElementById('building-works-tab').classList.contains('hidden')) renderBuildingWorks();
 }
 async function init() {
   loadData();
