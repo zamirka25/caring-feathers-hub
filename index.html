@@ -194,6 +194,7 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
     <button class="nav-link" data-tab="bills" onclick="showTab('bills')"><span class="nav-icon">📋</span> Bills</button>
     <button class="nav-link" data-tab="calendar" onclick="showTab('calendar')"><span class="nav-icon">📅</span> Calendar</button>
     <button class="nav-link" data-tab="payments" onclick="showTab('payments')"><span class="nav-icon">💳</span> Payments</button>
+    <button class="nav-link" data-tab="petty-cash" onclick="showTab('petty-cash')"><span class="nav-icon">💷</span> Petty Cash</button>
     <button class="nav-link" data-tab="reports" onclick="showTab('reports')"><span class="nav-icon">📊</span> Reports</button>
     <button class="nav-link" data-tab="homes" onclick="showTab('homes')"><span class="nav-icon">🏡</span> Homes</button>
     <button class="nav-link" data-tab="ofsted" onclick="showTab('ofsted')"><span class="nav-icon">🔎</span> Ofsted</button>
@@ -290,6 +291,23 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
             <tbody id="payments-tbody"></tbody>
           </table>
         </div>
+      </div>
+    </div>
+
+    <!-- ============ PETTY CASH ============ -->
+    <div id="petty-cash-tab" class="tab-content hidden">
+      <div class="section">
+        <div class="section-head"><h2>💷 Petty Cash</h2><button class="btn btn-primary" id="pc-add-btn" onclick="showPcModal()">+ Set up a home</button></div>
+        <div id="pc-setup"></div>
+        <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Petty cash goes out every 4 weeks (13 times a year). Each home shows the account the money is paid into, the amount per cycle and the next date. Paying a cycle books the next one automatically, 28 days later.</p>
+        <div class="summary-bar" id="pc-summary"></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Home</th><th>Paid Into</th><th>Sort Code</th><th>Account No</th><th>Amount / 4 wks</th><th>Next Due</th><th>Actions</th></tr></thead>
+            <tbody id="pc-tbody"></tbody>
+          </table>
+        </div>
+        <div id="pc-missing" style="margin-top:14px;"></div>
       </div>
     </div>
 
@@ -404,8 +422,8 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
       </div>
       <div class="section">
         <h2>ℹ️ About</h2>
-        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;"><strong>Caring Feathers Finance Hub — version 2.5</strong> (12 July 2026)<br>
-        Shared team data with live sync · recurring-bill forecast · Ofsted &amp; Young People tracking (incl. council + IPA) · phone notifications.</p>
+        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;"><strong>Caring Feathers Finance Hub — version 2.6</strong> (25 July 2026)<br>
+        Shared team data with live sync · recurring-bill forecast · petty cash accounts · Ofsted &amp; Young People tracking (incl. council + IPA) · phone notifications.</p>
       </div>
     </div>
 
@@ -418,6 +436,7 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
   <button class="nav-link" data-tab="bills" onclick="showTab('bills')"><span class="nav-icon">📋</span>Bills</button>
   <button class="nav-link" data-tab="calendar" onclick="showTab('calendar')"><span class="nav-icon">📅</span>Calendar</button>
   <button class="nav-link" data-tab="payments" onclick="showTab('payments')"><span class="nav-icon">💳</span>Pay</button>
+  <button class="nav-link" data-tab="petty-cash" onclick="showTab('petty-cash')"><span class="nav-icon">💷</span>Petty</button>
   <button class="nav-link" data-tab="reports" onclick="showTab('reports')"><span class="nav-icon">📊</span>Reports</button>
   <button class="nav-link" data-tab="homes" onclick="showTab('homes')"><span class="nav-icon">🏡</span>Homes</button>
   <button class="nav-link" data-tab="ofsted" onclick="showTab('ofsted')"><span class="nav-icon">🔎</span>Ofsted</button>
@@ -507,6 +526,25 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
   </form>
 </div></div>
 
+<div id="pc-modal" class="modal"><div class="modal-content">
+  <h2 id="pc-modal-title">Set Up Petty Cash</h2>
+  <form id="pc-form" onsubmit="savePc(event)">
+    <div class="form-grid">
+      <div class="form-group full"><label>Home *</label><select id="pc-home" required></select></div>
+      <div class="form-group full"><label>Account Name *</label><input type="text" id="pc-account-name" placeholder="e.g. Caring Feathers Burton" required></div>
+      <div class="form-group"><label>Bank *</label><input type="text" id="pc-bank" list="bank-list" placeholder="e.g. Monzo" required></div>
+      <div class="form-group"><label>Sort Code *</label><input type="text" id="pc-sort" inputmode="numeric" placeholder="e.g. 04-00-03" required></div>
+      <div class="form-group"><label>Account Number *</label><input type="text" id="pc-account-no" inputmode="numeric" maxlength="8" placeholder="8 digits" required></div>
+      <div class="form-group"><label>Amount per 4 weeks (£)</label><input type="number" id="pc-amount" step="0.01" min="0"></div>
+      <div class="form-group"><label>Next Due Date</label><input type="date" id="pc-next-due"></div>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" onclick="closeModal('pc-modal')">Cancel</button>
+      <button type="submit" class="btn btn-primary">Save</button>
+    </div>
+  </form>
+</div></div>
+
 <div id="yp-modal" class="modal"><div class="modal-content">
   <h2 id="yp-modal-title">Add Young Person</h2>
   <form id="yp-form" onsubmit="saveYp(event)">
@@ -557,7 +595,7 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
 let homes = [], bills = [], payments = [], youngPeople = [], settings = {};
 let editingBillId = null, editingHomeId = null, editingYpId = null;
 let calMonth = '';   // YYYY-MM shown on calendar
-const schemaReady = { yp: true };   // set false if the young_people table / Ofsted columns aren't created yet
+const schemaReady = { yp: true, pc: true };   // set false if the young_people table / Ofsted columns / petty-cash columns aren't created yet
 const LS = { homes: 'cfx-homes', bills: 'cfx-bills', payments: 'cfx-payments', youngPeople: 'cfx-yp', settings: 'cfx-settings' };
 
 /* =================== Shared cloud database =================== */
@@ -567,10 +605,11 @@ const db = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 
 // camelCase (app) <-> snake_case (database) mapping
 const homeToRow = h => ({ id: h.id, name: h.name, city: h.city || '', manager: h.manager || '', bank: h.bank || '', monthly_budget: +h.monthlyBudget || 0, active: h.active !== false,
-  // The four Ofsted/residential columns only exist after the migration; sending them to an
-  // un-migrated database would reject the whole row, so include them only once schema is ready.
-  ...(schemaReady.yp ? { residential: !!h.residential, last_ofsted_date: h.lastOfstedDate || '', ofsted_rating: h.ofstedRating || '', next_ofsted_date: h.nextOfstedDate || '' } : {}) });
-const rowToHome = r => ({ id: r.id, name: r.name, city: r.city || '', manager: r.manager || '', bank: r.bank || '', monthlyBudget: +r.monthly_budget || 0, active: r.active !== false, residential: !!r.residential, lastOfstedDate: r.last_ofsted_date || '', ofstedRating: r.ofsted_rating || '', nextOfstedDate: r.next_ofsted_date || '' });
+  // The Ofsted/residential and petty-cash columns only exist after their migrations; sending them
+  // to an un-migrated database would reject the whole row, so include each set only once ready.
+  ...(schemaReady.yp ? { residential: !!h.residential, last_ofsted_date: h.lastOfstedDate || '', ofsted_rating: h.ofstedRating || '', next_ofsted_date: h.nextOfstedDate || '' } : {}),
+  ...(schemaReady.pc ? { pc_account_name: h.pcAccountName || '', pc_bank: h.pcBank || '', pc_sort_code: h.pcSortCode || '', pc_account_number: h.pcAccountNumber || '' } : {}) });
+const rowToHome = r => ({ id: r.id, name: r.name, city: r.city || '', manager: r.manager || '', bank: r.bank || '', monthlyBudget: +r.monthly_budget || 0, active: r.active !== false, residential: !!r.residential, lastOfstedDate: r.last_ofsted_date || '', ofstedRating: r.ofsted_rating || '', nextOfstedDate: r.next_ofsted_date || '', pcAccountName: r.pc_account_name || '', pcBank: r.pc_bank || '', pcSortCode: r.pc_sort_code || '', pcAccountNumber: r.pc_account_number || '' });
 const billToRow = b => ({ id: b.id, home: b.home, category: b.category, vendor: b.vendor || '', bank_account: b.bankAccount || '', frequency: b.frequency || 'Monthly', amount: b.amount == null ? '' : String(b.amount), next_due_date: b.nextDueDate || '', reminder_days: b.reminderDays || 7, status: b.status || 'Pending', notes: b.notes || '' });
 const rowToBill = r => ({ id: r.id, home: r.home, category: r.category, vendor: r.vendor || '', bankAccount: r.bank_account || '', frequency: r.frequency || 'Monthly', amount: r.amount || '', nextDueDate: r.next_due_date || '', reminderDays: r.reminder_days || 7, status: r.status || 'Pending', notes: r.notes || '' });
 const payToRow = p => ({ id: p.id, bill_id: p.billId || '', home: p.home || '', category: p.category || '', paid_date: p.paidDate || '', amount: p.amount == null ? '' : String(p.amount), method: p.method || '', notes: p.notes || '' });
@@ -603,11 +642,13 @@ async function fetchAll() {
   homes = h.data.map(rowToHome); bills = b.data.map(rowToBill); payments = p.data.map(rowToPay);
   // Young People + Ofsted columns are added by the same migration. Probe BOTH (an explicit
   // column probe, since homes may be empty) and treat the feature as ready only if both exist.
-  const [y, hc] = await Promise.all([
+  const [y, hc, pc] = await Promise.all([
     db.from('young_people').select('*'),
-    db.from('homes').select('residential').limit(1)
+    db.from('homes').select('residential').limit(1),
+    db.from('homes').select('pc_bank').limit(1)
   ]);
   schemaReady.yp = !y.error && !hc.error;
+  schemaReady.pc = !pc.error;
   youngPeople = y.error ? [] : y.data.map(rowToYp);
   saveData();
 }
@@ -825,6 +866,7 @@ function showTab(name) {
   if (name === 'homes') renderHomes();
   if (name === 'ofsted') renderOfsted();
   if (name === 'young-people') renderYoungPeople();
+  if (name === 'petty-cash') renderPettyCash();
   window.scrollTo(0, 0);
 }
 
@@ -1603,6 +1645,131 @@ function deleteYp(id) {
   saveData(); dbDelete('young_people', id); refreshAll(); toast('Record deleted');
 }
 
+/* =================== Petty Cash =================== */
+const PC_MIGRATION_SQL = [
+  "alter table homes add column if not exists pc_account_name text default '';",
+  "alter table homes add column if not exists pc_bank text default '';",
+  "alter table homes add column if not exists pc_sort_code text default '';",
+  "alter table homes add column if not exists pc_account_number text default '';"
+].join("\n");
+function copyPcSql() {
+  const open = () => window.open('https://supabase.com/dashboard/project/dsvcfegwiqdbabywxnod/sql/new', '_blank');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(PC_MIGRATION_SQL).then(
+      () => { toast('✓ Copied. In Supabase: clear the box (Ctrl+A, Delete), paste, Run'); open(); },
+      () => { open(); window.prompt('Copy this, paste into the Supabase SQL editor, and press Run:', PC_MIGRATION_SQL); });
+  } else { open(); window.prompt('Copy this, paste into the Supabase SQL editor, and press Run:', PC_MIGRATION_SQL); }
+}
+function pcSetupBannerHTML() {
+  return `<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:16px;margin-bottom:16px;">
+    <strong style="color:var(--blue);">One-time setup needed</strong>
+    <p style="font-size:13px;color:var(--muted);margin:6px 0 12px;">This page needs a small database update (it adds storage for each home's petty cash account). Only the administrator needs to do it, once.</p>
+    <button class="btn btn-primary" onclick="copyPcSql()">Copy update &amp; open Supabase</button>
+    <p style="font-size:12px;color:var(--muted);margin-top:10px;">In Supabase: <strong>SQL Editor, clear the box (Ctrl+A then Delete), paste (Ctrl+V), Run</strong>, then reload this app.</p>
+  </div>`;
+}
+function fmtSort(s) {
+  const d = String(s || '').replace(/\D/g, '');
+  return d.length === 6 ? d.slice(0, 2) + '-' + d.slice(2, 4) + '-' + d.slice(4, 6) : (s || '');
+}
+function isPettyCashBill(b) { return /petty\s*cash/i.test(b.category || ''); }
+function pcBillFor(home) {
+  return bills.filter(b => b.home === home.name && b.status === 'Pending' && isPettyCashBill(b) && b.nextDueDate)
+    .sort((a, b) => a.nextDueDate.localeCompare(b.nextDueDate))[0] || null;
+}
+function pcIsSetUp(h) { return !!(pcBillFor(h) || h.pcAccountName || h.pcAccountNumber || h.pcBank); }
+let editingPcHomeId = null;
+function renderPettyCash() {
+  document.getElementById('pc-setup').innerHTML = schemaReady.pc ? '' : pcSetupBannerHTML();
+  document.getElementById('pc-add-btn').disabled = !schemaReady.pc;
+  const rows = homes.filter(h => h.active && pcIsSetUp(h)).sort((a, b) => a.name.localeCompare(b.name));
+  const tbody = document.getElementById('pc-tbody');
+  const perCycle = rows.reduce((s, h) => { const b = pcBillFor(h); return s + (b ? amt(b.amount) : 0); }, 0);
+  const nextDates = rows.map(h => pcBillFor(h)).filter(Boolean).map(b => b.nextDueDate).sort();
+  document.getElementById('pc-summary').innerHTML = rows.length ?
+    `<div><strong>${rows.length}</strong> home${rows.length === 1 ? '' : 's'}</div>
+     <div>Per cycle: <strong>${money(perCycle)}</strong></div>
+     <div>Per year (13 cycles): <strong>${money(perCycle * 13)}</strong></div>
+     ${nextDates.length ? `<div>Next payment: <strong>${fmtDate(nextDates[0])}</strong></div>` : ''}` :
+    '<div style="color:var(--muted);">No petty cash set up yet. Use "+ Set up a home".</div>';
+  tbody.innerHTML = rows.length ? rows.map(h => {
+    const b = pcBillFor(h);
+    const d = b ? daysUntil(b.nextDueDate) : null;
+    const dueBadge = b ? (d < 0 ? ` <span class="badge red">overdue ${Math.abs(d)}d</span>` : d <= 7 ? ` <span class="badge orange">${d}d</span>` : '') : '';
+    const missingAcc = !(h.pcAccountName && h.pcSortCode && h.pcAccountNumber);
+    return `<tr>
+      <td><strong>${esc(h.name)}</strong></td>
+      <td>${h.pcAccountName ? `${esc(h.pcAccountName)}${h.pcBank ? ' <span class="badge blue">' + esc(h.pcBank) + '</span>' : ''}` : '<span style="color:var(--orange);">account not set</span>'}</td>
+      <td>${h.pcSortCode ? esc(fmtSort(h.pcSortCode)) : '—'}</td>
+      <td>${h.pcAccountNumber ? esc(h.pcAccountNumber) : '—'}</td>
+      <td>${b && b.amount ? '<strong>' + money(b.amount) + '</strong>' : '<span style="color:var(--orange);">not set</span>'}</td>
+      <td>${b ? '<small>' + fmtDate(b.nextDueDate) + '</small>' + dueBadge : '<span style="color:var(--orange);">no date</span>'}</td>
+      <td><div class="actions">
+        ${b ? `<button class="btn btn-success action-btn" onclick="openPayModal('${b.id}')">✓ Pay</button>` : ''}
+        <button class="btn btn-secondary action-btn" onclick="showPcModal('${h.id}')">${missingAcc ? 'Add account' : 'Edit'}</button>
+      </div></td></tr>`;
+  }).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:22px;">Nothing here yet.</td></tr>';
+  const missing = homes.filter(h => h.active && h.residential && !pcIsSetUp(h));
+  document.getElementById('pc-missing').innerHTML = missing.length ?
+    `<p style="font-size:13px;color:var(--muted);margin-bottom:8px;">Homes without petty cash:</p>` +
+    missing.map(h => `<button class="btn btn-secondary action-btn" style="margin:0 6px 6px 0;" onclick="showPcModal('${h.id}')">+ ${esc(h.name)}</button>`).join('') : '';
+}
+function showPcModal(homeId) {
+  if (!schemaReady.pc) { renderPettyCash(); toast('Please complete the one-time setup first'); return; }
+  editingPcHomeId = homeId || null;
+  const sel = document.getElementById('pc-home');
+  sel.innerHTML = '<option value="">Select Home</option>' + homes.filter(h => h.active).map(h => `<option value="${esc(h.id)}">${esc(h.name)}</option>`).join('');
+  document.getElementById('pc-form').reset();
+  sel.disabled = false;
+  if (homeId) {
+    const h = homes.find(x => x.id === homeId); if (!h) return;
+    sel.value = h.id; sel.disabled = true;
+    document.getElementById('pc-modal-title').textContent = 'Petty Cash: ' + h.name;
+    document.getElementById('pc-account-name').value = h.pcAccountName || '';
+    document.getElementById('pc-bank').value = h.pcBank || '';
+    document.getElementById('pc-sort').value = fmtSort(h.pcSortCode) || '';
+    document.getElementById('pc-account-no').value = h.pcAccountNumber || '';
+    const b = pcBillFor(h);
+    document.getElementById('pc-amount').value = b ? (b.amount || '') : '';
+    document.getElementById('pc-next-due').value = b ? (b.nextDueDate || '') : '';
+  } else {
+    document.getElementById('pc-modal-title').textContent = 'Set Up Petty Cash';
+  }
+  document.getElementById('pc-modal').classList.add('show');
+}
+function savePc(e) {
+  e.preventDefault();
+  const homeId = editingPcHomeId || document.getElementById('pc-home').value;
+  const h = homes.find(x => x.id === homeId);
+  if (!h) { alert('Please choose a home.'); return; }
+  const sortDigits = document.getElementById('pc-sort').value.replace(/\D/g, '');
+  if (sortDigits.length !== 6) { alert('The sort code should be 6 digits, e.g. 04-00-03.'); return; }
+  const accNo = document.getElementById('pc-account-no').value.replace(/\D/g, '');
+  if (accNo.length < 6 || accNo.length > 10) { alert('The account number should be 8 digits (6 to 10 accepted).'); return; }
+  h.pcAccountName = document.getElementById('pc-account-name').value.trim();
+  h.pcBank = document.getElementById('pc-bank').value.trim();
+  h.pcSortCode = sortDigits;
+  h.pcAccountNumber = accNo;
+  saveData(); dbUpsert('homes', h);
+  // Keep the recurring petty cash bill in step with what was entered
+  const amount = document.getElementById('pc-amount').value;
+  const nextDue = document.getElementById('pc-next-due').value;
+  let b = pcBillFor(h);
+  if (b) {
+    if (amount) b.amount = amount;
+    if (nextDue) b.nextDueDate = nextDue;
+    b.frequency = 'Every 4 Weeks';
+    if (h.pcBank) b.bankAccount = h.pcBank;
+    dbUpsert('bills', b);
+  } else if (amount || nextDue) {
+    b = { id: nextId('B', bills, 4), home: h.name, category: 'Petty Cash', vendor: '', bankAccount: h.pcBank || '',
+      frequency: 'Every 4 Weeks', amount: amount || '', nextDueDate: nextDue || '', reminderDays: 7, status: 'Pending', notes: '' };
+    bills.push(b);
+    dbUpsert('bills', b);
+  }
+  saveData(); closeModal('pc-modal'); refreshAll(); toast('Petty cash saved for ' + h.name);
+}
+
 /* =================== Settings / notifications / backup =================== */
 function refreshNotifyUI() {
   const st = document.getElementById('notify-status');
@@ -1707,6 +1874,7 @@ function refreshAll() {
   if (!document.getElementById('homes-tab').classList.contains('hidden')) renderHomes();
   if (!document.getElementById('ofsted-tab').classList.contains('hidden')) renderOfsted();
   if (!document.getElementById('young-people-tab').classList.contains('hidden')) renderYoungPeople();
+  if (!document.getElementById('petty-cash-tab').classList.contains('hidden')) renderPettyCash();
 }
 async function init() {
   loadData();

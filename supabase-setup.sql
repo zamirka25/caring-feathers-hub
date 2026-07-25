@@ -13,6 +13,10 @@ create table if not exists homes (
   last_ofsted_date text default '',
   ofsted_rating text default '',
   next_ofsted_date text default '',
+  pc_account_name text default '',
+  pc_bank text default '',
+  pc_sort_code text default '',
+  pc_account_number text default '',
   updated_at timestamptz default now()
 );
 
