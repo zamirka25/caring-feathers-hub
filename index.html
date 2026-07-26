@@ -445,7 +445,7 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
       </div>
       <div class="section">
         <h2>ℹ️ About</h2>
-        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;"><strong>Caring Feathers Finance Hub — version 3.0</strong> (26 July 2026)<br>
+        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;"><strong>Caring Feathers Finance Hub — version 3.1</strong> (26 July 2026)<br>
         Shared team data with live sync · recurring-bill forecast · petty cash accounts · building works · Ofsted &amp; Young People tracking (incl. council + IPA) · phone notifications.</p>
       </div>
     </div>
@@ -1897,12 +1897,24 @@ function renderPettyCash() {
       <td><div class="actions">
         ${b ? `<button class="btn btn-success action-btn" onclick="openPayModal('${b.id}')">✓ Pay</button>` : ''}
         <button class="btn btn-secondary action-btn" onclick="showPcModal('${h.id}')">${missingAcc ? 'Add account' : 'Edit'}</button>
+        <button class="btn btn-danger action-btn" onclick="deletePettyCash('${h.id}')">🗑</button>
       </div></td></tr>`;
   }).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:22px;">Nothing here yet.</td></tr>';
   const missing = homes.filter(h => h.active && h.residential && !pcIsSetUp(h));
   document.getElementById('pc-missing').innerHTML = missing.length ?
     `<p style="font-size:13px;color:var(--muted);margin-bottom:8px;">Homes without petty cash:</p>` +
     missing.map(h => `<button class="btn btn-secondary action-btn" style="margin:0 6px 6px 0;" onclick="showPcModal('${h.id}')">+ ${esc(h.name)}</button>`).join('') : '';
+}
+function deletePettyCash(homeId) {
+  const h = homes.find(x => x.id === homeId);
+  if (!h) return;
+  if (!confirm(`Remove petty cash for "${h.name}"? This clears its account details and its upcoming petty cash cycle. The home itself and any payments already recorded stay untouched.`)) return;
+  h.pcAccountName = ''; h.pcBank = ''; h.pcSortCode = ''; h.pcAccountNumber = '';
+  saveData(); dbUpsert('homes', h);
+  const toRemove = bills.filter(b => b.home === h.name && b.status === 'Pending' && isPettyCashBill(b));
+  toRemove.forEach(b => dbDelete('bills', b.id));
+  bills = bills.filter(b => !(b.home === h.name && b.status === 'Pending' && isPettyCashBill(b)));
+  saveData(); refreshAll(); toast('Petty cash removed for ' + h.name);
 }
 function showPcModal(homeId) {
   if (!schemaReady.pc) { renderPettyCash(); toast('Please complete the one-time setup first'); return; }
