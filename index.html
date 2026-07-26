@@ -445,7 +445,7 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
       </div>
       <div class="section">
         <h2>ℹ️ About</h2>
-        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;"><strong>Caring Feathers Finance Hub — version 2.9</strong> (25 July 2026)<br>
+        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;"><strong>Caring Feathers Finance Hub — version 3.0</strong> (26 July 2026)<br>
         Shared team data with live sync · recurring-bill forecast · petty cash accounts · building works · Ofsted &amp; Young People tracking (incl. council + IPA) · phone notifications.</p>
       </div>
     </div>
@@ -1747,10 +1747,21 @@ function renderBuildingWorks() {
       </div></td></tr>`).join('') :
     '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:22px;">No building works recorded yet. Use "+ Add Building Work".</td></tr>';
 }
+function homeOptionsByName(selectedName) {
+  // Real care homes only (Puffin, Swan, Dove, Petal, Canary...), sorted; keep an existing
+  // value selectable even if that home isn't flagged residential.
+  const list = residentialHomes().slice().sort((a, b) => a.name.localeCompare(b.name));
+  if (selectedName && !list.some(h => h.name === selectedName)) {
+    const extra = homes.find(h => h.name === selectedName);
+    if (extra) list.push(extra);
+  }
+  return '<option value="">Select Home</option>' + list.map(h => `<option value="${esc(h.name)}">${esc(h.name)}</option>`).join('');
+}
 function showBwModal(billId) {
   editingBwId = billId || null;
   document.getElementById('bw-form').reset();
-  document.getElementById('bw-home').innerHTML = '<option value="">Select Home</option>' + homes.filter(h => h.active).map(h => `<option value="${esc(h.name)}">${esc(h.name)}</option>`).join('');
+  const bwEditHome = billId ? (bills.find(x => x.id === billId) || {}).home : '';
+  document.getElementById('bw-home').innerHTML = homeOptionsByName(bwEditHome);
   // payee dropdown: saved payee accounts (Iris Consulting first) + any account used on past jobs + Other
   const names = [...new Set([
     'Iris Consulting',
@@ -1897,7 +1908,9 @@ function showPcModal(homeId) {
   if (!schemaReady.pc) { renderPettyCash(); toast('Please complete the one-time setup first'); return; }
   editingPcHomeId = homeId || null;
   const sel = document.getElementById('pc-home');
-  sel.innerHTML = '<option value="">Select Home</option>' + homes.filter(h => h.active).map(h => `<option value="${esc(h.id)}">${esc(h.name)}</option>`).join('');
+  const pcList = residentialHomes().slice().sort((a, b) => a.name.localeCompare(b.name));
+  if (homeId && !pcList.some(h => h.id === homeId)) { const extra = homes.find(h => h.id === homeId); if (extra) pcList.push(extra); }
+  sel.innerHTML = '<option value="">Select Home</option>' + pcList.map(h => `<option value="${esc(h.id)}">${esc(h.name)}</option>`).join('');
   document.getElementById('pc-form').reset();
   sel.disabled = false;
   if (homeId) {
