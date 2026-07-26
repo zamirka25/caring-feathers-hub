@@ -60,7 +60,18 @@ create table if not exists payments (
   updated_at timestamptz default now()
 );
 
+create table if not exists payees (
+  id text primary key,
+  name text default '',
+  sort_code text default '',
+  account_number text default '',
+  updated_at timestamptz default now()
+);
+
 -- Security: only signed-in team members can read or write
+alter table payees enable row level security;
+drop policy if exists "team can do everything" on payees;
+create policy "team can do everything" on payees for all to authenticated using (true) with check (true);
 alter table homes enable row level security;
 alter table bills enable row level security;
 alter table payments enable row level security;

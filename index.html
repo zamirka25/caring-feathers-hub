@@ -445,7 +445,7 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
       </div>
       <div class="section">
         <h2>ℹ️ About</h2>
-        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;"><strong>Caring Feathers Finance Hub — version 2.8</strong> (25 July 2026)<br>
+        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;"><strong>Caring Feathers Finance Hub — version 2.9</strong> (25 July 2026)<br>
         Shared team data with live sync · recurring-bill forecast · petty cash accounts · building works · Ofsted &amp; Young People tracking (incl. council + IPA) · phone notifications.</p>
       </div>
     </div>
@@ -557,7 +557,10 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
       <div class="form-group"><label>Home *</label><select id="bw-home" required></select></div>
       <div class="form-group"><label>Contractor</label><input type="text" id="bw-contractor" placeholder="e.g. Fast Bond Maintenance"></div>
       <div class="form-group full"><label>What is the job? *</label><input type="text" id="bw-job" maxlength="100" placeholder="e.g. New boiler, roof repair, repaint lounge" required></div>
-      <div class="form-group full"><label>Paid to (account) <span style="font-weight:400;color:var(--muted);">(usually Iris Consulting, change if different)</span></label><input type="text" id="bw-paidto" list="bw-payee-list" placeholder="e.g. Iris Consulting"><datalist id="bw-payee-list"></datalist></div>
+      <div class="form-group full"><label>Paid to (account) <span style="font-weight:400;color:var(--muted);">(usually Iris Consulting)</span></label>
+        <select id="bw-paidto-sel" onchange="document.getElementById('bw-paidto-other').style.display = this.value === '__OTHER__' ? 'block' : 'none'"></select>
+        <input type="text" id="bw-paidto-other" placeholder="Type the account name" style="display:none;margin-top:8px;">
+      </div>
       <div class="form-group"><label>Amount (£) *</label><input type="number" id="bw-amount" step="0.01" min="0" required></div>
       <div class="form-group"><label>Date *</label><input type="date" id="bw-date" required></div>
       <div class="form-group full" id="bw-paid-wrap" style="flex-direction:row;align-items:center;gap:8px;background:#f8f9fb;padding:10px 12px;border-radius:8px;">
@@ -640,11 +643,11 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
 <script src="vendor/supabase.js"></script>
 <script>
 /* =================== State & storage =================== */
-let homes = [], bills = [], payments = [], youngPeople = [], settings = {};
+let homes = [], bills = [], payments = [], youngPeople = [], payees = [], settings = {};
 let editingBillId = null, editingHomeId = null, editingYpId = null;
 let calMonth = '';   // YYYY-MM shown on calendar
-const schemaReady = { yp: true, pc: true };   // set false if the young_people table / Ofsted columns / petty-cash columns aren't created yet
-const LS = { homes: 'cfx-homes', bills: 'cfx-bills', payments: 'cfx-payments', youngPeople: 'cfx-yp', settings: 'cfx-settings' };
+const schemaReady = { yp: true, pc: true, payees: true };   // set false if the young_people table / Ofsted columns / petty-cash columns / payees table aren't created yet
+const LS = { homes: 'cfx-homes', bills: 'cfx-bills', payments: 'cfx-payments', youngPeople: 'cfx-yp', payees: 'cfx-payees', settings: 'cfx-settings' };
 
 /* =================== Shared cloud database =================== */
 const SUPA_URL = 'https://dsvcfegwiqdbabywxnod.supabase.co';
@@ -664,7 +667,9 @@ const payToRow = p => ({ id: p.id, bill_id: p.billId || '', home: p.home || '', 
 const rowToPay = r => ({ id: r.id, billId: r.bill_id || '', home: r.home || '', category: r.category || '', paidDate: r.paid_date || '', amount: r.amount || '', method: r.method || '', notes: r.notes || '' });
 const ypToRow = y => ({ id: y.id, initials: y.initials || '', home: y.home || '', council: y.council || '', date_in: y.dateIn || '', date_out: y.dateOut || '', ipa_received: !!y.ipaReceived, ipa_date: y.ipaDate || '', notes: y.notes || '' });
 const rowToYp = r => ({ id: r.id, initials: r.initials || '', home: r.home || '', council: r.council || '', dateIn: r.date_in || '', dateOut: r.date_out || '', ipaReceived: !!r.ipa_received, ipaDate: r.ipa_date || '', notes: r.notes || '' });
-const TABLE_MAP = { homes: [homeToRow, rowToHome], bills: [billToRow, rowToBill], payments: [payToRow, rowToPay], young_people: [ypToRow, rowToYp] };
+const payeeToRow = p => ({ id: p.id, name: p.name || '', sort_code: p.sortCode || '', account_number: p.accountNumber || '' });
+const rowToPayee = r => ({ id: r.id, name: r.name || '', sortCode: r.sort_code || '', accountNumber: r.account_number || '' });
+const TABLE_MAP = { homes: [homeToRow, rowToHome], bills: [billToRow, rowToBill], payments: [payToRow, rowToPay], young_people: [ypToRow, rowToYp], payees: [payeeToRow, rowToPayee] };
 
 function dbUpsert(table, obj) {
   db.from(table).upsert(TABLE_MAP[table][0](obj)).then(({ error }) => { if (error) toast('⚠ Sync failed: ' + error.message); });
@@ -690,20 +695,23 @@ async function fetchAll() {
   homes = h.data.map(rowToHome); bills = b.data.map(rowToBill); payments = p.data.map(rowToPay);
   // Young People + Ofsted columns are added by the same migration. Probe BOTH (an explicit
   // column probe, since homes may be empty) and treat the feature as ready only if both exist.
-  const [y, hc, pc] = await Promise.all([
+  const [y, hc, pc, pe] = await Promise.all([
     db.from('young_people').select('*'),
     db.from('homes').select('residential').limit(1),
-    db.from('homes').select('pc_bank').limit(1)
+    db.from('homes').select('pc_bank').limit(1),
+    db.from('payees').select('*')
   ]);
   schemaReady.yp = !y.error && !hc.error;
   schemaReady.pc = !pc.error;
+  schemaReady.payees = !pe.error;
   youngPeople = y.error ? [] : y.data.map(rowToYp);
+  payees = pe.error ? [] : pe.data.map(rowToPayee);
   saveData();
 }
 
 function applyChange(table, payload) {
   const conv = TABLE_MAP[table][1];
-  const cur = table === 'homes' ? homes : table === 'bills' ? bills : table === 'payments' ? payments : youngPeople;
+  const cur = table === 'homes' ? homes : table === 'bills' ? bills : table === 'payments' ? payments : table === 'payees' ? payees : youngPeople;
   let next = cur;
   if (payload.eventType === 'DELETE') {
     next = cur.filter(x => x.id !== (payload.old && payload.old.id));
@@ -713,7 +721,7 @@ function applyChange(table, payload) {
     if (i >= 0) cur[i] = obj; else cur.push(obj);
   }
   if (table === 'homes') homes = next; else if (table === 'bills') bills = next;
-  else if (table === 'payments') payments = next; else youngPeople = next;
+  else if (table === 'payments') payments = next; else if (table === 'payees') payees = next; else youngPeople = next;
   saveData(); updateHomeFilters(); refreshAll();
 }
 function subscribeRealtime() {
@@ -721,8 +729,9 @@ function subscribeRealtime() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'homes' }, p => applyChange('homes', p))
     .on('postgres_changes', { event: '*', schema: 'public', table: 'bills' }, p => applyChange('bills', p))
     .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, p => applyChange('payments', p));
-  // Only bind young_people once its table exists — binding a missing table can error the whole channel
+  // Only bind tables that exist — binding a missing table can error the whole channel
   if (schemaReady.yp) ch.on('postgres_changes', { event: '*', schema: 'public', table: 'young_people' }, p => applyChange('young_people', p));
+  if (schemaReady.payees) ch.on('postgres_changes', { event: '*', schema: 'public', table: 'payees' }, p => applyChange('payees', p));
   ch.subscribe();
 }
 
@@ -891,8 +900,9 @@ function loadData() {
     bills = JSON.parse(localStorage.getItem(LS.bills)) || [];
     payments = JSON.parse(localStorage.getItem(LS.payments)) || [];
     youngPeople = JSON.parse(localStorage.getItem(LS.youngPeople)) || [];
+    payees = JSON.parse(localStorage.getItem(LS.payees)) || [];
     settings = JSON.parse(localStorage.getItem(LS.settings)) || {};
-  } catch (e) { homes = []; bills = []; payments = []; youngPeople = []; settings = {}; }
+  } catch (e) { homes = []; bills = []; payments = []; youngPeople = []; payees = []; settings = {}; }
   if (settings.defaultReminderDays == null) settings.defaultReminderDays = 7;
 }
 function saveData() {
@@ -900,6 +910,7 @@ function saveData() {
   localStorage.setItem(LS.bills, JSON.stringify(bills));
   localStorage.setItem(LS.payments, JSON.stringify(payments));
   localStorage.setItem(LS.youngPeople, JSON.stringify(youngPeople));
+  localStorage.setItem(LS.payees, JSON.stringify(payees));
   localStorage.setItem(LS.settings, JSON.stringify(settings));
 }
 
@@ -1725,7 +1736,7 @@ function renderBuildingWorks() {
       <td><strong>${esc(b.home)}</strong></td>
       <td>${esc(b.notes) || '—'}</td>
       <td>${esc(b.vendor) || '—'}</td>
-      <td>${b.bankAccount ? esc(b.bankAccount) : '<span style="color:var(--orange);">not set</span>'}</td>
+      <td>${(() => { if (!b.bankAccount) return '<span style="color:var(--muted);">—</span>'; const pd = payees.find(p => p.name === b.bankAccount); return esc(b.bankAccount) + (pd && pd.accountNumber ? `<br><small style="color:var(--muted);">acc ${esc(pd.accountNumber)}${pd.sortCode ? ' · ' + esc(fmtSort(pd.sortCode)) : ''}</small>` : ''); })()}</td>
       <td>${b.amount ? '<strong>' + money(b.amount) + '</strong>' : '—'}</td>
       <td><small>${fmtDate(b.nextDueDate) || '—'}</small></td>
       <td>${getBillStatusBadge(b)}</td>
@@ -1740,9 +1751,17 @@ function showBwModal(billId) {
   editingBwId = billId || null;
   document.getElementById('bw-form').reset();
   document.getElementById('bw-home').innerHTML = '<option value="">Select Home</option>' + homes.filter(h => h.active).map(h => `<option value="${esc(h.name)}">${esc(h.name)}</option>`).join('');
-  // payee quick-pick: accounts used on past jobs, with Iris Consulting always offered
-  const payees = [...new Set(['Iris Consulting', ...bills.filter(isBuildingWork).map(b => b.bankAccount).filter(Boolean)])];
-  document.getElementById('bw-payee-list').innerHTML = payees.map(p => `<option>${esc(p)}</option>`).join('');
+  // payee dropdown: saved payee accounts (Iris Consulting first) + any account used on past jobs + Other
+  const names = [...new Set([
+    'Iris Consulting',
+    ...payees.map(p => p.name).filter(Boolean),
+    ...bills.filter(isBuildingWork).map(b => b.bankAccount).filter(Boolean)
+  ])];
+  const psel = document.getElementById('bw-paidto-sel');
+  psel.innerHTML = '<option value="">— not set —</option>' +
+    names.map(n => { const pd = payees.find(p => p.name === n); const acc = pd && pd.accountNumber ? ' (acc ' + pd.accountNumber + ')' : ''; return `<option value="${esc(n)}">${esc(n)}${esc(acc)}</option>`; }).join('') +
+    '<option value="__OTHER__">Other account…</option>';
+  document.getElementById('bw-paidto-other').style.display = 'none';
   document.getElementById('bw-method-wrap').style.display = 'none';
   document.getElementById('bw-paid-wrap').style.display = billId ? 'none' : 'flex';
   if (billId) {
@@ -1753,13 +1772,15 @@ function showBwModal(billId) {
     sel.value = b.home || '';
     document.getElementById('bw-contractor').value = b.vendor || '';
     document.getElementById('bw-job').value = b.notes || '';
-    document.getElementById('bw-paidto').value = b.bankAccount || '';
+    if (!b.bankAccount) psel.value = '';
+    else if ([...psel.options].some(o => o.value === b.bankAccount)) psel.value = b.bankAccount;
+    else { psel.value = '__OTHER__'; const oth = document.getElementById('bw-paidto-other'); oth.style.display = 'block'; oth.value = b.bankAccount; }
     document.getElementById('bw-amount').value = b.amount || '';
     document.getElementById('bw-date').value = b.nextDueDate || '';
   } else {
     document.getElementById('bw-modal-title').textContent = 'Add Building Work';
     document.getElementById('bw-date').value = todayISO();
-    document.getElementById('bw-paidto').value = 'Iris Consulting';
+    psel.value = 'Iris Consulting';
   }
   document.getElementById('bw-modal').classList.add('show');
 }
@@ -1770,7 +1791,7 @@ function saveBw(e) {
     category: 'Building Works',
     vendor: document.getElementById('bw-contractor').value.trim(),
     notes: document.getElementById('bw-job').value.trim(),
-    bankAccount: document.getElementById('bw-paidto').value.trim(),
+    bankAccount: (() => { const v = document.getElementById('bw-paidto-sel').value; return v === '__OTHER__' ? document.getElementById('bw-paidto-other').value.trim() : v; })(),
     amount: document.getElementById('bw-amount').value,
     nextDueDate: document.getElementById('bw-date').value,
     frequency: 'Ad-hoc', reminderDays: 7
