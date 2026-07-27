@@ -302,6 +302,7 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
         <div id="pc-setup"></div>
         <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Petty cash goes out every 4 weeks (13 times a year). Each home shows the account the money is paid into, the amount per cycle and the next date. Paying a cycle books the next one automatically, 28 days later.</p>
         <div class="summary-bar" id="pc-summary"></div>
+        <div id="pc-schedule" style="margin-bottom:14px;"></div>
         <div class="table-wrap">
           <table>
             <thead><tr><th>Home</th><th>Paid Into</th><th>Sort Code</th><th>Account No</th><th>Amount / 4 wks</th><th>Next Due</th><th>Actions</th></tr></thead>
@@ -445,7 +446,7 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
       </div>
       <div class="section">
         <h2>ℹ️ About</h2>
-        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;"><strong>Caring Feathers Finance Hub — version 3.1</strong> (26 July 2026)<br>
+        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;"><strong>Caring Feathers Finance Hub — version 3.2</strong> (27 July 2026)<br>
         Shared team data with live sync · recurring-bill forecast · petty cash accounts · building works · Ofsted &amp; Young People tracking (incl. council + IPA) · phone notifications.</p>
       </div>
     </div>
@@ -1882,6 +1883,15 @@ function renderPettyCash() {
      <div>Per year (13 cycles): <strong>${money(perCycle * 13)}</strong></div>
      ${nextDates.length ? `<div>Next payment: <strong>${fmtDate(nextDates[0])}</strong></div>` : ''}` :
     '<div style="color:var(--muted);">No petty cash set up yet. Use "+ Set up a home".</div>';
+  // Shared 4-weekly payment schedule (real pending cycles + forecast), earliest first
+  const schedDates = [...new Set([
+    ...bills.filter(b => b.status === 'Pending' && isPettyCashBill(b)).map(b => b.nextDueDate),
+    ...getProjectedBills().filter(b => isPettyCashBill(b)).map(b => b.nextDueDate)
+  ].filter(Boolean))].sort();
+  document.getElementById('pc-schedule').innerHTML = schedDates.length ?
+    '<div style="font-size:12.5px;color:var(--muted);margin-bottom:6px;">📅 Payment schedule — every 4 weeks:</div>' +
+    schedDates.map(d => { const dd = daysUntil(d); const cls = dd < 0 ? 'red' : dd <= 0 ? 'orange' : dd <= 7 ? 'orange' : 'blue';
+      const lbl = dd === 0 ? ' · due today' : dd < 0 ? ' · overdue' : ''; return `<span class="badge ${cls}" style="margin:0 6px 6px 0;display:inline-block;">${fmtDate(d)}${lbl}</span>`; }).join('') : '';
   tbody.innerHTML = rows.length ? rows.map(h => {
     const b = pcBillFor(h);
     const d = b ? daysUntil(b.nextDueDate) : null;
