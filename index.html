@@ -298,7 +298,12 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
     <!-- ============ PETTY CASH ============ -->
     <div id="petty-cash-tab" class="tab-content hidden">
       <div class="section">
-        <div class="section-head"><h2>💷 Petty Cash</h2><button class="btn btn-primary" id="pc-add-btn" onclick="showPcModal()">+ Set up a home</button></div>
+        <div class="section-head"><h2>💷 Petty Cash</h2>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-secondary" onclick="pcStartToday()">📅 Set schedule from today</button>
+            <button class="btn btn-primary" id="pc-add-btn" onclick="showPcModal()">+ Set up a home</button>
+          </div>
+        </div>
         <div id="pc-setup"></div>
         <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Petty cash goes out every 4 weeks (13 times a year). Each home shows the account the money is paid into, the amount per cycle and the next date. Paying a cycle books the next one automatically, 28 days later.</p>
         <div class="summary-bar" id="pc-summary"></div>
@@ -446,7 +451,7 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
       </div>
       <div class="section">
         <h2>ℹ️ About</h2>
-        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;"><strong>Caring Feathers Finance Hub — version 3.2</strong> (27 July 2026)<br>
+        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;"><strong>Caring Feathers Finance Hub — version 3.3</strong> (27 July 2026)<br>
         Shared team data with live sync · recurring-bill forecast · petty cash accounts · building works · Ofsted &amp; Young People tracking (incl. council + IPA) · phone notifications.</p>
       </div>
     </div>
@@ -1914,6 +1919,14 @@ function renderPettyCash() {
   document.getElementById('pc-missing').innerHTML = missing.length ?
     `<p style="font-size:13px;color:var(--muted);margin-bottom:8px;">Homes without petty cash:</p>` +
     missing.map(h => `<button class="btn btn-secondary action-btn" style="margin:0 6px 6px 0;" onclick="showPcModal('${h.id}')">+ ${esc(h.name)}</button>`).join('') : '';
+}
+function pcStartToday() {
+  const pcBills = bills.filter(b => b.status === 'Pending' && isPettyCashBill(b));
+  if (!pcBills.length) { toast('No petty cash set up yet'); return; }
+  const homesTxt = [...new Set(pcBills.map(b => b.home))].join(', ');
+  if (!confirm(`Start all petty cash from today (${fmtDate(todayISO())}) and run every 4 weeks?\n\nThis re-anchors: ${homesTxt}`)) return;
+  pcBills.forEach(b => { b.nextDueDate = todayISO(); b.frequency = 'Every 4 Weeks'; dbUpsert('bills', b); });
+  saveData(); refreshAll(); toast('Petty cash schedule set from today — running every 4 weeks');
 }
 function deletePettyCash(homeId) {
   const h = homes.find(x => x.id === homeId);
