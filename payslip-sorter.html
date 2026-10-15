@@ -1,0 +1,1850 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Payslip Sorter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=Schibsted+Grotesk:wght@600;700&display=swap">
+<style>
+/* Layout: one calm working column (max 1040px). Intake sits beside a preview of the output on wide screens;
+   results stack below in the order the owner works through them: totals, issues, changes, filing by hand, naming + download, then each home. */
+:root{
+  --bg:#eef2f0;            /* pale security-paper green-grey */
+  --surface:#ffffff;
+  --sunken:#e3e9e6;
+  --ink:#15201c;
+  --ink-2:#4a5853;
+  --line:#d2dbd7;
+  --line-strong:#a7b7b1;
+  --accent:#1c5a4c;        /* pine ink */
+  --accent-hover:#154638;
+  --on-accent:#ffffff;
+  --accent-soft:#d7e8e1;
+  --focus:#1c5a4c;
+  --high:#b0261d; --high-bg:#fbe6e3;
+  --med:#875000;  --med-bg:#fbeed5;
+  --low:#4b5a55;  --low-bg:#e4eae7;
+  --info:#1d5b9a; --info-bg:#e0ebf8;
+  --ok:#1c6a3f;   --ok-bg:#dcf0e3;
+  --shadow:0 1px 2px rgb(21 32 28 / .06), 0 6px 18px rgb(21 32 28 / .05);
+  --font-display:"Schibsted Grotesk","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --font-body:"Atkinson Hyperlegible","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --font-data:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1412; --surface:#161f1c; --sunken:#1d2824; --ink:#e2ebe7; --ink-2:#9fb1aa;
+    --line:#2a3833; --line-strong:#43554e; --accent:#7cc8b3; --accent-hover:#9bd8c7; --on-accent:#0b1915;
+    --accent-soft:#1b3830; --focus:#7cc8b3;
+    --high:#ff8d82; --high-bg:#3a1915; --med:#f0b862; --med-bg:#342610; --low:#b3c2bc; --low-bg:#25312d;
+    --info:#96c2f3; --info-bg:#172a40;
+    --ok:#7fd7a4; --ok-bg:#15301f; --shadow:0 1px 2px rgb(0 0 0 / .35);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1412; --surface:#161f1c; --sunken:#1d2824; --ink:#e2ebe7; --ink-2:#9fb1aa;
+  --line:#2a3833; --line-strong:#43554e; --accent:#7cc8b3; --accent-hover:#9bd8c7; --on-accent:#0b1915;
+  --accent-soft:#1b3830; --focus:#7cc8b3;
+  --high:#ff8d82; --high-bg:#3a1915; --med:#f0b862; --med-bg:#342610; --low:#b3c2bc; --low-bg:#25312d;
+  --info:#96c2f3; --info-bg:#172a40;
+  --ok:#7fd7a4; --ok-bg:#15301f; --shadow:0 1px 2px rgb(0 0 0 / .35);
+  color-scheme:dark;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:1rem;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1040px;margin-inline:auto;padding-inline:16px;padding-block:28px 56px;display:grid;gap:32px}
+@media (min-width:720px){.wrap{padding-inline:28px;padding-block:44px 72px;gap:40px}}
+h1,h2,h3,h4{font-family:var(--font-display);text-wrap:balance;margin:0;line-height:1.2;color:var(--ink);font-weight:700}
+p{margin:0}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.eyebrow{font-size:.8125rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+.num{font-family:var(--font-data);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* Header */
+.top{display:flex;flex-wrap:wrap;gap:18px 32px;align-items:flex-end;justify-content:space-between}
+.brand{display:flex;gap:14px;align-items:flex-start;min-width:0;flex:1 1 420px}
+.mark{width:46px;height:46px;flex:none;margin-top:2px}
+.mark .sheet{fill:var(--surface);stroke:var(--accent);stroke-width:2}
+.mark .perf{stroke:var(--accent);stroke-width:2;stroke-dasharray:2 3;fill:none}
+.mark .lines{stroke:var(--accent);stroke-width:2.2;stroke-linecap:round;fill:none}
+.mark .stub{fill:var(--accent-soft)}
+h1{font-size:clamp(1.85rem,1.35rem + 1.8vw,2.5rem);letter-spacing:-.015em}
+.lede{color:var(--ink-2);max-width:58ch;margin-top:6px;font-size:1.0625rem}
+.privacy{display:flex;gap:10px;align-items:flex-start;background:var(--accent-soft);border-radius:var(--r);padding:12px 14px;font-size:.9375rem;flex:0 1 360px;min-width:0}
+.privacy svg{flex:none;width:20px;height:20px;margin-top:1px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.privacy span{color:var(--ink-2)}
+.privacy strong{color:var(--ink);display:block}
+
+/* How to use */
+.howto{display:grid;gap:12px}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:14px}
+@media (min-width:760px){.steps{grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}}
+.steps li{display:flex;gap:12px;align-items:flex-start;min-width:0}
+.steps .n{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--on-accent);font-family:var(--font-display);font-weight:700;font-size:.9375rem}
+.steps strong{display:block;font-size:1.0625rem}
+.steps p{color:var(--ink-2);font-size:.9375rem;margin-top:2px}
+
+/* Intake */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.intake{display:grid;gap:20px}
+@media (min-width:900px){.intake{grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);align-items:start}}
+.intake-main{padding:20px;display:grid;gap:18px;min-width:0}
+.drops{display:grid;gap:16px}
+@media (min-width:600px){.drops{grid-template-columns:repeat(2,minmax(0,1fr))}.drop-col.wide{grid-column:1 / -1}}
+.drop-col{display:grid;gap:10px;align-content:start;min-width:0}
+.drop{position:relative;display:grid;justify-items:center;align-content:center;text-align:center;gap:4px;min-height:164px;padding:20px 16px;border:2px dashed var(--line-strong);border-radius:var(--r);background:var(--sunken);cursor:pointer;transition:border-color .15s,background-color .15s}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop:focus-within{outline:3px solid var(--focus);outline-offset:2px}
+.drop.done{border-style:solid;border-color:var(--ok)}
+.drop svg{width:30px;height:30px;stroke:var(--accent);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;margin-bottom:4px}
+.drop.compact{min-height:0;grid-template-columns:auto minmax(0,1fr);justify-items:start;align-items:center;text-align:left;gap:4px 14px;padding:14px 16px;background:transparent}
+.drop.compact:hover,.drop.compact.over{background:var(--accent-soft)}
+.drop.compact svg{width:26px;height:26px;margin:0}
+.compact-text{display:grid;gap:1px;min-width:0}
+.drop-tag{font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+.drop-title{font-weight:700;font-size:1.0625rem}
+.drop-hint{color:var(--ink-2);font-size:.9375rem}
+.drop-hint u{color:var(--accent);text-underline-offset:3px;font-weight:700}
+.sr-input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.files{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.files li{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:7px 8px 7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-size:.9375rem}
+.ftype{font-family:var(--font-data);font-size:.6875rem;font-weight:500;letter-spacing:.04em;padding:2px 6px;border-radius:4px;background:var(--sunken);color:var(--ink-2)}
+.fname{min-width:0;overflow-wrap:anywhere;line-height:1.35}
+.fsize{color:var(--ink-2);font-family:var(--font-data);font-size:.75rem;white-space:nowrap}
+.x{font:inherit;border:0;background:transparent;color:var(--ink-2);width:32px;height:32px;border-radius:6px;cursor:pointer;display:grid;place-items:center}
+.x:hover{background:var(--sunken);color:var(--ink)}
+.x svg{width:16px;height:16px;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.actions{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+.hint{color:var(--ink-2);font-size:.9375rem;min-width:0;flex:1 1 220px}
+.progress-wrap{display:grid;gap:8px}
+.progress{height:8px;border-radius:99px;background:var(--sunken);overflow:hidden}
+.progress-fill{height:100%;width:0;background:var(--accent);border-radius:99px;transition:width .2s ease}
+.progress-text{font-size:.9375rem;color:var(--ink-2)}
+.alert{border:1px solid var(--high);background:var(--high-bg);border-radius:8px;padding:12px 14px;font-size:.9375rem}
+.alert strong{color:var(--high)}
+.soft-note{font-size:.9375rem;color:var(--ink-2);background:var(--sunken);border-radius:8px;padding:10px 12px}
+
+/* Output preview */
+.preview{padding:20px;display:grid;gap:12px;align-content:start;min-width:0}
+.preview h2{font-size:1.1875rem}
+.preview > p{color:var(--ink-2);font-size:.9375rem}
+.tree,.tree ul{list-style:none;margin:0;padding:0}
+.tree ul{margin-left:9px;padding-left:16px;border-left:1px dashed var(--line-strong)}
+.tree li{padding:5px 0;min-width:0}
+.tree .nm{display:flex;gap:8px;align-items:flex-start;font-family:var(--font-data);font-size:.8125rem;line-height:1.4;overflow-wrap:anywhere}
+.tree .nm svg{flex:none;width:16px;height:16px;margin-top:1px;stroke:var(--accent);fill:none;stroke-width:1.8;stroke-linejoin:round}
+.tree .ds{display:block;color:var(--ink-2);font-size:.8125rem;margin-left:24px}
+
+/* Buttons */
+.btn{font:inherit;font-weight:700;border-radius:8px;padding:11px 20px;border:1px solid transparent;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;text-align:center;line-height:1.25}
+.btn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.btn.primary{background:var(--accent);color:var(--on-accent)}
+.btn.primary:hover{background:var(--accent-hover)}
+.btn.primary:disabled{background:var(--sunken);color:var(--ink-2);border-color:var(--line);cursor:not-allowed}
+.btn.ghost{background:var(--surface);color:var(--ink);border-color:var(--line-strong)}
+.btn.ghost:hover{background:var(--sunken)}
+.btn.small{padding:8px 14px;min-height:40px;font-size:.9375rem}
+.btn:disabled{cursor:progress}
+
+/* Results */
+.results{display:grid;gap:32px;scroll-margin-top:16px}
+.res-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px 24px;align-items:flex-end}
+.res-head > div{min-width:0}
+.res-head h2{font-size:clamp(1.5rem,1.2rem + 1.2vw,2rem);margin-top:2px}
+.meta{color:var(--ink-2);font-size:.9375rem;margin-top:6px;overflow-wrap:anywhere}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+@media (min-width:620px){.stats{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (min-width:980px){.stats{grid-template-columns:repeat(6,minmax(0,1fr))}}
+.stat{background:var(--surface);padding:14px 16px 16px;display:grid;gap:2px;align-content:start;min-width:0}
+.stat .v{font-family:var(--font-display);font-size:1.875rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat .l{font-size:.9375rem;font-weight:700}
+.stat .s{font-size:.8125rem;color:var(--ink-2)}
+.stat.bad .v{color:var(--high)}
+.stat.good .v{color:var(--ok)}
+.block{display:grid;gap:14px;min-width:0}
+.block-head{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;justify-content:space-between}
+.block-head h3,.dl h3,.manual h3{font-size:1.375rem}
+.block-note{color:var(--ink-2);font-size:.9375rem;max-width:70ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-block;justify-self:start;align-self:start;font-size:.75rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:3px 9px;border-radius:99px;line-height:1.45;white-space:nowrap}
+.chip.high{background:var(--high-bg);color:var(--high)}
+.chip.medium{background:var(--med-bg);color:var(--med)}
+.chip.low{background:var(--low-bg);color:var(--low)}
+.chip.info{background:var(--info-bg);color:var(--info)}
+.chip.ok{background:var(--ok-bg);color:var(--ok)}
+.issues{list-style:none;margin:0;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+.issue{display:grid;grid-template-columns:6rem minmax(0,1fr);gap:6px 14px;padding:14px 16px;border-top:1px solid var(--line)}
+.issue:first-child{border-top:0}
+.issue .who{font-weight:700}
+.issue .who span{font-weight:400;color:var(--ink-2)}
+.issue .what{margin-top:2px;max-width:75ch}
+.issue .todo{color:var(--ink-2);font-size:.9375rem;margin-top:4px;max-width:75ch}
+.issue .todo b{color:var(--ink)}
+.issue.none{grid-template-columns:auto minmax(0,1fr);align-items:center}
+@media (max-width:520px){.issue{grid-template-columns:minmax(0,1fr)}}
+
+/* Changes since last month */
+.changes{display:grid;gap:12px;align-items:start}
+@media (min-width:760px){.changes{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.change-col{padding:14px 16px 8px;display:grid;gap:4px;align-content:start;min-width:0;box-shadow:none}
+.cc-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cc-head h4{font-size:1.0625rem}
+.cc-sub{font-size:.8125rem;color:var(--ink-2)}
+.cc-list{list-style:none;margin:6px 0 0;padding:0;border-top:1px dashed var(--line-strong)}
+.cc-list li{display:grid;padding:7px 0;border-bottom:1px solid var(--line);min-width:0}
+.cc-list li:last-child{border-bottom:0}
+.cc-home{font-size:.875rem;color:var(--ink-2);overflow-wrap:anywhere}
+.cc-none{color:var(--ink-2);font-size:.9375rem;padding:6px 0 8px}
+
+/* Filing by hand */
+.manual{padding:20px;display:grid;gap:14px;min-width:0}
+.manual > p{color:var(--ink-2);font-size:.9375rem;max-width:70ch}
+.mlist{list-style:none;margin:0;padding:0;border:1px solid var(--line);border-radius:8px}
+.mi{display:grid;gap:12px 20px;padding:14px 16px;border-top:1px solid var(--line);min-width:0}
+.mi:first-child{border-top:0}
+@media (min-width:760px){.mi{grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);align-items:start}}
+.mi-info{display:grid;gap:3px;min-width:0;justify-items:start}
+.mi-name{font-weight:700;font-size:1.0625rem;overflow-wrap:anywhere;margin-top:4px}
+.mi-meta{font-size:.875rem;color:var(--ink-2);overflow-wrap:anywhere}
+.mi-hint{font-size:.875rem;color:var(--info)}
+.mi-controls{display:grid;gap:10px;min-width:0}
+@media (min-width:600px){.mi-controls.two{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr)}}
+select{font:inherit;font-weight:400;padding:10px 12px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--ink);width:100%;min-width:0}
+.fn{display:flex;align-items:center;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);min-width:0}
+.fn:focus-within{outline:3px solid var(--focus);outline-offset:2px}
+.fn input[type="text"]{border:0;flex:1}
+.fn input[type="text"]:focus-visible{outline:none}
+.fn .ext{padding-right:12px;color:var(--ink-2);font-family:var(--font-data);font-size:.8125rem;font-weight:400}
+
+.dl{padding:20px;display:grid;gap:16px;min-width:0}
+.dl > p{color:var(--ink-2);font-size:.9375rem;max-width:70ch}
+.fields{display:grid;gap:12px}
+@media (min-width:600px){.fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.field{display:grid;gap:6px;font-size:.9375rem;font-weight:700;min-width:0}
+.field small{font-weight:400;color:var(--ink-2)}
+input[type="text"]{font:inherit;font-weight:400;padding:10px 12px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--ink);width:100%;min-width:0}
+input[type="text"]::placeholder{color:var(--ink-2);opacity:.75}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table.folders{width:100%;border-collapse:collapse;font-size:.9375rem}
+.folders th{text-align:left;font-size:.75rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-2);padding:9px 12px;background:var(--sunken);font-weight:700;white-space:nowrap}
+.folders td{padding:8px 12px;border-top:1px solid var(--line);vertical-align:middle}
+.folders td:first-child{overflow-wrap:anywhere;min-width:6rem}
+.folders td:nth-child(2){min-width:8.5rem}
+.folders .cnt{display:none;font-size:.8125rem;color:var(--ink-2)}
+@media (max-width:560px){.folders th,.folders td{padding-inline:10px}.folders th:nth-child(3),.folders td:nth-child(3){display:none}.folders .cnt{display:block}}
+.path{font-family:var(--font-data);font-size:.8125rem;color:var(--ink-2);overflow-wrap:anywhere;background:var(--sunken);border-radius:6px;padding:8px 10px}
+.dl-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.dl-homes{display:grid;gap:8px}
+.dl-homes p{font-size:.9375rem;color:var(--ink-2)}
+.home-btns{display:flex;flex-wrap:wrap;gap:8px}
+.dl-status{font-size:.9375rem;color:var(--ink-2);min-height:1.5em}
+.dl-status.err{color:var(--high)}
+
+.homes{display:grid;gap:16px;align-items:start}
+@media (min-width:760px){.homes{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.home{padding:16px 18px 10px;display:grid;gap:8px;align-content:start;min-width:0}
+.home.unmatched{border-color:var(--high)}
+.home-head{display:flex;justify-content:space-between;gap:8px 12px;align-items:baseline;flex-wrap:wrap}
+.home-head h4{font-size:1.1875rem;min-width:0;overflow-wrap:anywhere}
+.home-meta{color:var(--ink-2);font-size:.9375rem}
+.people{list-style:none;margin:6px 0 0;padding:0;border-top:1px dashed var(--line-strong)}
+.people li{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:2px 12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+.people li:last-child{border-bottom:0}
+.pname{min-width:0;overflow-wrap:anywhere;line-height:1.35}
+.pname small{display:block;color:var(--high);font-size:.8125rem;margin-top:2px}
+.pname small.mild{color:var(--med)}
+.people .num{font-size:.875rem}
+.people .num.missing{font-family:var(--font-body);color:var(--high);font-weight:700}
+.badge{font-size:.6875rem;font-weight:700;letter-spacing:.07em;padding:3px 7px;border-radius:5px;text-transform:uppercase;justify-self:end;white-space:nowrap}
+.badge.ok{background:var(--ok-bg);color:var(--ok)}
+.badge.check{background:var(--high-bg);color:var(--high)}
+.badge.hand{background:var(--med-bg);color:var(--med)}
+.foot-actions{display:flex;justify-content:center}
+
+.foot{color:var(--ink-2);font-size:.875rem;border-top:1px solid var(--line);padding-top:18px;display:grid;gap:6px;max-width:80ch}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 46 46" aria-hidden="true">
+        <rect class="sheet" x="7" y="3" width="32" height="40" rx="3"/>
+        <rect class="stub" x="8" y="4" width="30" height="9" rx="2"/>
+        <path class="perf" d="M7 14.5h32"/>
+        <path class="lines" d="M13 22h14M13 28h10M13 34h16"/>
+      </svg>
+      <div>
+        <h1>Payslip Sorter</h1>
+        <p class="lede">Sort each month's payslips into one folder per home, check them against the payroll summary, and download a pack for each manager.</p>
+      </div>
+    </div>
+    <p class="privacy">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
+      <span><strong>Your files are processed on this device and never uploaded.</strong> Nothing is sent anywhere or saved. Closing or refreshing this page clears them.</span>
+    </p>
+  </header>
+
+  <section class="howto" aria-labelledby="howto-h">
+    <h2 id="howto-h" class="eyebrow">How to use</h2>
+    <ol class="steps">
+      <li><span class="n">1</span><div><strong>Add the payroll summary</strong><p>The Excel file with an Employee column and a House column (Home, Department or Site also work). Last month's summary is optional.</p></div></li>
+      <li><span class="n">2</span><div><strong>Add the payslip PDFs</strong><p>One big PDF from the payroll software, or several split files. Duplicates and pages in the wrong file are fine.</p></div></li>
+      <li><span class="n">3</span><div><strong>Check, then download</strong><p>Read the issues, file any leftover pages by hand, then download everything or one ZIP per home for each manager.</p></div></li>
+    </ol>
+  </section>
+
+  <section class="intake" aria-label="Add files">
+    <div class="card intake-main">
+      <div class="drops">
+        <div class="drop-col">
+          <label class="drop" id="dropXlsx" for="xlsxInput">
+            <input type="file" id="xlsxInput" class="sr-input" accept=".xlsx,.xlsm,.xls,.csv">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M3.5 9h17M3.5 14.5h17M9.5 9v11.5"/></svg>
+            <span class="drop-tag">Step 1 · Excel</span>
+            <span class="drop-title">Payroll summary</span>
+            <span class="drop-hint">Drop this month's .xlsx here or <u>choose file</u></span>
+          </label>
+          <ul class="files" id="xlsxList" aria-label="Payroll summary file"></ul>
+        </div>
+        <div class="drop-col">
+          <label class="drop" id="dropPdf" for="pdfInput">
+            <input type="file" id="pdfInput" class="sr-input" accept=".pdf,application/pdf" multiple>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.5h8l4.5 4.5v14.5H6z"/><path d="M14 2.5V7h4.5M9 12h6M9 15.5h6M9 19h3.5"/></svg>
+            <span class="drop-tag">Step 2 · PDF</span>
+            <span class="drop-title">Payslip PDFs</span>
+            <span class="drop-hint">Drop the PDFs here or <u>choose files</u></span>
+          </label>
+          <ul class="files" id="pdfList" aria-label="Payslip PDF files"></ul>
+        </div>
+        <div class="drop-col wide">
+          <label class="drop compact" id="dropLast" for="lastInput">
+            <input type="file" id="lastInput" class="sr-input" accept=".xlsx,.xlsm,.xls,.csv">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3.5 3.5V8H8M12 7.5V12l3 2"/></svg>
+            <span class="compact-text">
+              <span class="drop-tag">Optional · Excel</span>
+              <span class="drop-title">Last month's payroll summary</span>
+              <span class="drop-hint">Shows starters, leavers and people who moved home. Drop it here or <u>choose file</u></span>
+            </span>
+          </label>
+          <ul class="files" id="lastList" aria-label="Last month's payroll summary file"></ul>
+        </div>
+      </div>
+      <p class="soft-note" id="skipNote" hidden></p>
+      <div class="actions">
+        <button type="button" class="btn primary" id="sortBtn" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+          Sort payslips
+        </button>
+        <p class="hint" id="readyHint">Add the payroll summary and at least one payslip PDF.</p>
+      </div>
+      <div class="progress-wrap" id="progressWrap" hidden>
+        <div class="progress" role="progressbar" aria-label="Progress" aria-valuemin="0" aria-valuemax="100" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
+        <p class="progress-text" id="progressText" aria-live="polite"></p>
+      </div>
+      <div class="alert" id="errorBox" role="alert" hidden></div>
+    </div>
+
+    <aside class="card preview" aria-labelledby="preview-h">
+      <h2 id="preview-h">What you'll get</h2>
+      <p>One ZIP, laid out like this. Each home's folder can also be downloaded on its own.</p>
+      <ul class="tree">
+        <li><span class="nm"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 3.5h5l1.5 2h6.5v8h-13z"/></svg>[Company] Payroll - [Month]</span>
+          <ul>
+            <li><span class="nm"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="1.5" width="11" height="13" rx="1"/><path d="M2.5 6h11M2.5 10h11M7 6v8.5"/></svg>00 Payroll Check - [Month].xlsx</span><span class="ds">Issues to check, totals by home, every employee, changes since last month</span></li>
+            <li><span class="nm"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 3.5h5l1.5 2h6.5v8h-13z"/></svg>[Home]</span><span class="ds">One folder per home on the summary</span>
+              <ul>
+                <li><span class="nm"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 1.5h6l3 3v10h-9z"/></svg>[Home] - All Payslips [Month].pdf</span></li>
+                <li><span class="nm"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="1.5" width="11" height="13" rx="1"/><path d="M2.5 6h11M2.5 10h11M7 6v8.5"/></svg>[Home] - Employee List [Month].xlsx</span></li>
+                <li><span class="nm"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 3.5h5l1.5 2h6.5v8h-13z"/></svg>Individual Payslips</span><span class="ds">One PDF per person, named by them</span></li>
+              </ul>
+            </li>
+            <li><span class="nm"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 3.5h5l1.5 2h6.5v8h-13z"/></svg>Unmatched</span><span class="ds">Only for pages you haven't filed in a home</span></li>
+          </ul>
+        </li>
+      </ul>
+    </aside>
+  </section>
+
+  <section class="results" id="results" hidden aria-labelledby="resTitle">
+    <div class="res-head">
+      <div>
+        <p class="eyebrow">Results</p>
+        <h2 id="resTitle">Payroll</h2>
+        <p class="meta" id="resMeta"></p>
+      </div>
+      <button type="button" class="btn ghost small" id="restartTop">Start again</button>
+    </div>
+
+    <div class="stats" id="stats"></div>
+
+    <section class="block" aria-labelledby="issues-h">
+      <div class="block-head">
+        <h3 id="issues-h">Issues to check</h3>
+        <div class="chips" id="issueCounts"></div>
+      </div>
+      <ol class="issues" id="issues"></ol>
+    </section>
+
+    <section class="block" aria-labelledby="changes-h">
+      <div class="block-head">
+        <h3 id="changes-h">Changes since last month</h3>
+        <div class="chips" id="changeChips"></div>
+      </div>
+      <div id="changes"></div>
+    </section>
+
+    <section class="card manual" id="manualCard" aria-labelledby="manual-h" hidden>
+      <h3 id="manual-h">File these by hand</h3>
+      <p>These payslips could not be filed automatically. Choose a home for each one before you download. Anything left alone goes in the Unmatched folder of the full download.</p>
+      <ul class="mlist" id="manualList"></ul>
+    </section>
+
+    <section class="card dl" aria-labelledby="dl-h">
+      <h3 id="dl-h">Name the folders and download</h3>
+      <p>Folder names start as the home names on the summary. Change any of them here before you download.</p>
+      <div class="fields">
+        <label class="field" for="companyInput">Company name <small>Used in the main folder and workbook titles</small>
+          <input type="text" id="companyInput" placeholder="Company name" autocomplete="organization">
+        </label>
+        <label class="field" for="monthInput">Month <small id="monthHelp">Read from the pay date on the payslips</small>
+          <input type="text" id="monthInput" placeholder="e.g. Sep 2026" autocomplete="off">
+        </label>
+      </div>
+      <div class="table-wrap">
+        <table class="folders">
+          <thead><tr><th scope="col">Home on summary</th><th scope="col">Folder name</th><th scope="col">Payslips</th></tr></thead>
+          <tbody id="folderRows"></tbody>
+        </table>
+      </div>
+      <p class="path" id="topPath"></p>
+      <div class="dl-row">
+        <button type="button" class="btn primary" id="downloadAll">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v12M7 11l5 5 5-5M4.5 20.5h15"/></svg>
+          Download everything (.zip)
+        </button>
+      </div>
+      <div class="dl-homes">
+        <p>Or download one home at a time, to send each manager only their own payslips:</p>
+        <div class="home-btns" id="homeButtons"></div>
+      </div>
+      <p class="dl-status" id="dlStatus" aria-live="polite"></p>
+    </section>
+
+    <section class="block" aria-labelledby="homes-h">
+      <div class="block-head"><h3 id="homes-h">Homes</h3></div>
+      <div class="homes" id="homes"></div>
+    </section>
+
+    <div class="foot-actions"><button type="button" class="btn ghost" id="restartBottom">Start again</button></div>
+  </section>
+
+  <footer class="foot">
+    <p>Payslip Sorter reads the text inside the PDFs to find each person's name and net pay. Scanned or photographed payslips (images with no text) can't be read; export them from the payroll software instead.</p>
+    <p>The payroll summary decides which home each person belongs to. Password-protected PDFs need an unprotected copy.</p>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- constants ---------- */
+  var PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  var LS_COMPANY = 'payslipSorter.company.v1';
+  var LS_FOLDERS = 'payslipSorter.folders.v1';
+  var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var PRI_ORDER = { HIGH: 0, MEDIUM: 1, LOW: 2 };
+  var GBP = new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' });
+  var NO_HOUSE = 'No House';
+
+  /* ---------- tiny helpers ---------- */
+  function $(id) { return document.getElementById(id); }
+  function h(tag, props) {
+    var n = document.createElement(tag);
+    if (props) Object.keys(props).forEach(function (k) {
+      var v = props[k];
+      if (v == null || v === false) return;
+      if (k === 'class') n.className = v;
+      else if (k === 'text') n.textContent = v;
+      else if (k === 'value') n.value = v;
+      else if (k.slice(0, 2) === 'on') n.addEventListener(k.slice(2), v);
+      else n.setAttribute(k, v === true ? '' : v);
+    });
+    for (var i = 2; i < arguments.length; i++) append(n, arguments[i]);
+    return n;
+  }
+  function append(n, c) {
+    if (c == null || c === false) return;
+    if (Array.isArray(c)) { c.forEach(function (x) { append(n, x); }); return; }
+    n.append(c instanceof Node ? c : String(c));
+  }
+  /* Only the company name and folder names are remembered in this browser. No payroll data is ever stored. */
+  var store = {
+    get: function (k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } },
+    set: function (k, v) { try { window.localStorage.setItem(k, v); } catch (e) { /* storage unavailable */ } }
+  };
+  function money(v) { return (v == null || isNaN(v)) ? '' : GBP.format(v); }
+  function pence(v) { return Math.round(v * 100); }
+  function round2(v) { return Math.round(v * 100) / 100; }
+  function plural(n, one, many) { return n + ' ' + (n === 1 ? one : (many || one + 's')); }
+  function fmtSize(b) { return b < 1024 * 1024 ? Math.max(1, Math.round(b / 1024)) + ' KB' : (b / 1048576).toFixed(1) + ' MB'; }
+  function todayGB() { var d = new Date(); return pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear(); }
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function txt(v) { return typeof v === 'function' ? v() : v; }
+
+  var TITLE_RE = /^(?:mr|mrs|ms|miss|mx|dr)\.?\s+/i;
+  function stripTitle(s) {
+    s = String(s).replace(/\s+/g, ' ').trim();
+    var prev;
+    do { prev = s; s = s.replace(TITLE_RE, ''); } while (s !== prev && s);
+    return s || String(s).trim();
+  }
+  function norm(s) {
+    return String(s).normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  }
+  function safeName(s) {
+    return String(s).replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/[. ]+$/, '');
+  }
+  function parseNum(v) {
+    if (typeof v === 'number') return isFinite(v) ? v : NaN;
+    if (v == null) return NaN;
+    var s = String(v).trim();
+    if (!s) return NaN;
+    var neg = /^\(.*\)$/.test(s) || /^-/.test(s.replace(/[£\s]/g, ''));
+    s = s.replace(/[()£,\s]/g, '').replace(/^-/, '');
+    if (!/^\d+(\.\d+)?$/.test(s)) return NaN;
+    return neg ? -Number(s) : Number(s);
+  }
+  function isBlank(v) { return v == null || (typeof v === 'string' && v.trim() === ''); }
+
+  /* ---------- downloads (claude.ai viewer capability, with a plain-link fallback) ---------- */
+  var downloadsP = null;
+  try {
+    if (window.claude && typeof window.claude.use === 'function') {
+      downloadsP = Promise.resolve(window.claude.use('downloads')).catch(function () { return null; });
+    }
+  } catch (e) { downloadsP = null; }
+
+  function linkDownload(blob, filename) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = filename; a.rel = 'noopener'; a.style.display = 'none';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 120000);
+  }
+  async function saveFile(blob, filename) {
+    var dl = downloadsP ? await downloadsP : null;
+    if (dl && typeof dl.save === 'function') {
+      try { await dl.save({ filename: filename, data: blob }); return 'saved'; }
+      catch (e) {
+        var code = e && e.code;
+        if (code === 'declined') return 'declined';
+        if (code === 'rate_limited') throw new Error('Another save prompt is already open. Finish that one, then try again.');
+        if (code === 'too_large') throw new Error('This ZIP is too large to save here. Try downloading one home at a time.');
+        /* unavailable / not granted: fall back to a normal browser download */
+      }
+    }
+    linkDownload(blob, filename);
+    return 'link';
+  }
+
+  /* ---------- state ---------- */
+  function loadFolders() { try { return JSON.parse(store.get(LS_FOLDERS) || '{}') || {}; } catch (e) { return {}; } }
+  function freshPick() { return { emp: {}, page: {}, pageName: {} }; }
+  var state = {
+    xlsx: null,          // this month's summary {file, name, size}
+    last: null,          // last month's summary (optional)
+    pdfs: [],            // [{file, name, size, bytes}]
+    result: null,
+    busy: false,
+    srcDocs: new Map(),  // pdf-lib documents by file index
+    company: store.get(LS_COMPANY) || '',
+    month: '',
+    folders: loadFolders(),
+    folderDraft: {},     // what is typed in each folder box (kept in memory only)
+    pick: freshPick()    // homes and file names chosen on screen (kept in memory only)
+  };
+
+  /* ---------- folder naming + where things are filed ---------- */
+  function defaultFolder(house) {
+    var s = safeName(house);
+    return /^manager$/i.test(s) ? 'Managers' : (s || 'Home');
+  }
+  function folderOf(house) {
+    if (house == null) return 'Unmatched';
+    var custom = state.folders[house];
+    var s = safeName(custom == null ? '' : custom);
+    return s || defaultFolder(house);
+  }
+  function monthLabel() {
+    var m = safeName(state.month);
+    if (m) return m;
+    var r = state.result;
+    return r && r.month ? r.month.short : 'Month';
+  }
+  function context() {
+    var company = safeName(state.company);
+    var mon = monthLabel();
+    return { company: company, mon: mon, top: (company ? company + ' ' : '') + 'Payroll - ' + mon, prefix: company ? company + ' ' : '' };
+  }
+  function pickedHouse(v) {
+    var r = state.result;
+    if (v == null || v === '') return null;
+    return r.houses[+v] == null ? null : r.houses[+v];
+  }
+  function effHouse(e) { return e.noHouse ? pickedHouse(state.pick.emp[e.idx]) : e.house; }
+  function pageHouse(u) { return pickedHouse(state.pick.page[u.id]); }
+  function homeOfEmp(e) { return folderOf(effHouse(e)); }
+  function defaultPageName(u, ctx) { return safeName((u.name || u.label) + ' - Payslip ' + ctx.mon); }
+  function pageNameValue(u, ctx) { var v = state.pick.pageName[u.id]; return v == null ? defaultPageName(u, ctx) : v; }
+  function pageBase(u, ctx) {
+    var v = state.pick.pageName[u.id];
+    var s = v == null ? '' : safeName(String(v).replace(/\.pdf\s*$/i, ''));
+    return s || defaultPageName(u, ctx);
+  }
+  function groupsFor(r) {
+    var map = new Map();
+    r.houses.forEach(function (house) {
+      var f = folderOf(house);
+      if (!map.has(f)) map.set(f, { folder: f, houses: [], emps: [], manual: [] });
+      map.get(f).houses.push(house);
+    });
+    var loose = { emps: [], pages: [] };
+    r.emps.forEach(function (e) {
+      var hs = effHouse(e);
+      if (hs == null) loose.emps.push(e); else map.get(folderOf(hs)).emps.push(e);
+    });
+    r.unmatched.forEach(function (u) {
+      var hs = pageHouse(u);
+      if (hs == null) loose.pages.push(u); else map.get(folderOf(hs)).manual.push(u);
+    });
+    return { groups: Array.from(map.values()), loose: loose };
+  }
+
+  /* ---------- file intake ---------- */
+  var SHEET_EXT = ['xlsx', 'xlsm', 'xls', 'csv'];
+  function extOf(name) { var m = /\.([^.]+)$/.exec(name || ''); return m ? m[1].toLowerCase() : ''; }
+
+  function addFiles(list, target) {
+    if (state.busy) return;
+    var skipped = [], misplaced = [];
+    Array.prototype.forEach.call(list || [], function (f) {
+      var ext = extOf(f.name);
+      if (SHEET_EXT.indexOf(ext) >= 0) {
+        var entry = { file: f, name: f.name, size: f.size };
+        if (target === 'last') state.last = entry;
+        else if (target === 'xlsx' || !state.xlsx) state.xlsx = entry;
+        else misplaced.push(f.name);
+      } else if (ext === 'pdf' || f.type === 'application/pdf') {
+        var dup = state.pdfs.some(function (p) { return p.name === f.name && p.size === f.size; });
+        if (!dup) state.pdfs.push({ file: f, name: f.name, size: f.size, bytes: null });
+      } else {
+        skipped.push(f.name);
+      }
+    });
+    var notes = [];
+    if (skipped.length) notes.push(skipped.join(', ') + (skipped.length === 1 ? " isn't" : " aren't") + ' an Excel file or a PDF, so ' + (skipped.length === 1 ? 'it was' : 'they were') + ' skipped.');
+    if (misplaced.length) notes.push('To add ' + misplaced.join(', ') + ', drop it on the Payroll summary box (this month) or the Last month’s payroll summary box.');
+    var note = $('skipNote');
+    note.textContent = notes.join(' ');
+    note.hidden = !notes.length;
+    filesChanged();
+  }
+  function removeFile(kind, idx) {
+    if (state.busy) return;
+    if (kind === 'xlsx') state.xlsx = null;
+    else if (kind === 'last') state.last = null;
+    else state.pdfs.splice(idx, 1);
+    filesChanged();
+  }
+  function filesChanged() {
+    state.srcDocs = new Map();
+    state.pick = freshPick();
+    if (state.result) {
+      state.result = null;
+      $('results').hidden = true;
+    }
+    hideError();
+    renderFiles();
+  }
+  function fileRow(kind, f, idx) {
+    var x = h('button', { type: 'button', class: 'x', 'aria-label': 'Remove ' + f.name, title: 'Remove', onclick: function () { removeFile(kind, idx); } });
+    x.innerHTML = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>';
+    return h('li', null,
+      h('span', { class: 'ftype', text: kind === 'pdf' ? 'PDF' : (extOf(f.name).toUpperCase() || 'XLSX') }),
+      h('span', { class: 'fname', text: f.name }),
+      h('span', { class: 'fsize', text: fmtSize(f.size) }),
+      x);
+  }
+  function renderFiles() {
+    var xl = $('xlsxList'), pl = $('pdfList'), ll = $('lastList');
+    xl.replaceChildren(); pl.replaceChildren(); ll.replaceChildren();
+    if (state.xlsx) xl.append(fileRow('xlsx', state.xlsx, 0));
+    if (state.last) ll.append(fileRow('last', state.last, 0));
+    state.pdfs.forEach(function (p, i) { pl.append(fileRow('pdf', p, i)); });
+    $('dropXlsx').classList.toggle('done', !!state.xlsx);
+    $('dropPdf').classList.toggle('done', state.pdfs.length > 0);
+    $('dropLast').classList.toggle('done', !!state.last);
+    var ready = !!state.xlsx && state.pdfs.length > 0;
+    $('sortBtn').disabled = !ready || state.busy;
+    var hint = $('readyHint');
+    if (state.busy) hint.textContent = 'Working… this usually takes a few seconds.';
+    else if (ready) hint.textContent = 'Ready: 1 summary' + (state.last ? ', last month’s summary' : '') + ' and ' + plural(state.pdfs.length, 'PDF') + '.';
+    else if (!state.xlsx && !state.pdfs.length) hint.textContent = 'Add the payroll summary and at least one payslip PDF.';
+    else if (!state.xlsx) hint.textContent = 'Now add this month’s payroll summary (.xlsx).';
+    else hint.textContent = 'Now add the payslip PDFs.';
+  }
+
+  function wireDrop(zone, target) {
+    ['dragenter', 'dragover'].forEach(function (ev) {
+      zone.addEventListener(ev, function (e) { e.preventDefault(); e.stopPropagation(); zone.classList.add('over'); });
+    });
+    ['dragleave', 'dragend'].forEach(function (ev) {
+      zone.addEventListener(ev, function () { zone.classList.remove('over'); });
+    });
+    zone.addEventListener('drop', function (e) {
+      e.preventDefault(); e.stopPropagation(); zone.classList.remove('over');
+      if (e.dataTransfer && e.dataTransfer.files) addFiles(e.dataTransfer.files, target);
+    });
+  }
+  wireDrop($('dropXlsx'), 'xlsx');
+  wireDrop($('dropPdf'), null);
+  wireDrop($('dropLast'), 'last');
+  /* Files dropped anywhere else on the page are sorted by type instead of opening in the tab. */
+  window.addEventListener('dragover', function (e) { e.preventDefault(); });
+  window.addEventListener('drop', function (e) {
+    e.preventDefault();
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) addFiles(e.dataTransfer.files, null);
+  });
+  $('xlsxInput').addEventListener('change', function (e) { addFiles(e.target.files, 'xlsx'); e.target.value = ''; });
+  $('pdfInput').addEventListener('change', function (e) { addFiles(e.target.files, null); e.target.value = ''; });
+  $('lastInput').addEventListener('change', function (e) { addFiles(e.target.files, 'last'); e.target.value = ''; });
+
+  /* ---------- progress + errors ---------- */
+  function progress(text, frac) {
+    $('progressWrap').hidden = false;
+    $('progressText').textContent = text;
+    var pct = Math.max(0, Math.min(100, Math.round((frac || 0) * 100)));
+    $('progressFill').style.width = pct + '%';
+    $('progressBar').setAttribute('aria-valuenow', String(pct));
+  }
+  function hideProgress() { $('progressWrap').hidden = true; }
+  function showError(msg) {
+    var box = $('errorBox');
+    box.replaceChildren(h('strong', { text: 'Something needs fixing. ' }), document.createTextNode(msg));
+    box.hidden = false;
+  }
+  function hideError() { $('errorBox').hidden = true; }
+  function UserError(msg) { var e = new Error(msg); e.user = true; return e; }
+
+  /* ---------- 1. payroll summaries ---------- */
+  var EMP_HEAD = /^employee(?: name)?$/;
+  var HOUSE_HEAD = /^(?:house|home|department|site)(?: name)?$/;
+  var TOTAL_ROW = /^(?:grand\s+)?totals?\b/i;
+
+  async function readSummary(entry, which) {
+    var buf = new Uint8Array(await entry.file.arrayBuffer());
+    var wb;
+    try { wb = XLSX.read(buf, { type: 'array' }); }
+    catch (e) { throw UserError("Couldn't open " + entry.name + '. Save it as an Excel workbook (.xlsx) and try again.'); }
+    for (var si = 0; si < wb.SheetNames.length; si++) {
+      var sheetName = wb.SheetNames[si];
+      var ws = wb.Sheets[sheetName];
+      if (!ws || !ws['!ref']) continue;
+      var range = XLSX.utils.decode_range(ws['!ref']);
+      var rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null, blankrows: true });
+      for (var r = 0; r < rows.length; r++) {
+        var row = rows[r] || [];
+        var ei = -1, hi = -1;
+        for (var c = 0; c < row.length; c++) {
+          if (typeof row[c] !== 'string') continue;
+          var t = row[c].trim().toLowerCase().replace(/\s+/g, ' ');
+          if (ei < 0 && EMP_HEAD.test(t)) ei = c;
+          else if (hi < 0 && HOUSE_HEAD.test(t)) hi = c;
+        }
+        if (ei < 0 || hi < 0) continue;
+        var parsed = parseSummaryRows(rows, r, ei, hi, range);
+        if (parsed.emps.length) {
+          parsed.fileName = entry.name;
+          parsed.sheet = sheetName;
+          parsed.headerRow = range.s.r + r + 1;
+          return parsed;
+        }
+      }
+    }
+    throw UserError("Couldn't find the employee list in " + (which ? which + ' (' + entry.name + ')' : entry.name) + '. The summary needs a column headed "Employee" and a column headed "House" (or "Home", "Department" or "Site").');
+  }
+
+  function parseSummaryRows(rows, hr, ei, hi, range) {
+    var header = rows[hr];
+    var dataRows = [];
+    for (var r = hr + 1; r < rows.length; r++) {
+      var row = rows[r] || [];
+      var nameCell = row[ei], houseCell = row[hi];
+      if (isBlank(nameCell) || typeof nameCell === 'number') continue;
+      var name = String(nameCell).replace(/\s+/g, ' ').trim();
+      if (TOTAL_ROW.test(name) || EMP_HEAD.test(name.toLowerCase())) continue;
+      var house = isBlank(houseCell) ? '' : String(houseCell).replace(/\s+/g, ' ').trim();
+      if (house && HOUSE_HEAD.test(house.toLowerCase())) continue;
+      dataRows.push({ row: row, name: name, house: house, sheetRow: range.s.r + r + 1 });
+    }
+    /* numeric columns: every filled value in the column is a number (judged on rows that have a house) */
+    var withHouse = dataRows.filter(function (d) { return d.house; });
+    var basis = withHouse.length ? withHouse : dataRows;
+    var numCols = [];
+    var netCol = -1;
+    for (var c = 0; c < header.length; c++) {
+      if (c === ei || c === hi) continue;
+      var label = header[c] == null ? '' : String(header[c]).replace(/\s+/g, ' ').trim();
+      if (!label) continue;
+      var seen = 0, ok = true;
+      for (var i = 0; i < basis.length; i++) {
+        var v = basis[i].row[c];
+        if (isBlank(v)) continue;
+        if (isNaN(parseNum(v))) { ok = false; break; }
+        seen++;
+      }
+      if (ok && seen) numCols.push({ ci: c, label: label });
+      if (netCol < 0 && /net\s*pay/i.test(label)) netCol = c;
+    }
+    /* a row with a name but no house counts only if it carries pay figures (so notes rows are ignored) */
+    dataRows = dataRows.filter(function (d) {
+      if (d.house) return true;
+      return numCols.some(function (nc) { return !isBlank(d.row[nc.ci]) && !isNaN(parseNum(d.row[nc.ci])); });
+    });
+    var emps = dataRows.map(function (d, idx) {
+      var display = stripTitle(d.name);
+      var key = norm(display);
+      var nums = {};
+      numCols.forEach(function (nc) { var n = parseNum(d.row[nc.ci]); nums[nc.ci] = isNaN(n) ? null : n; });
+      var net = netCol >= 0 ? parseNum(d.row[netCol]) : NaN;
+      return {
+        idx: idx, name: d.name, display: display, key: key, keyNS: key.replace(/ /g, ''),
+        tokens: key ? key.split(' ') : [], house: d.house, noHouse: !d.house, sheetRow: d.sheetRow,
+        nums: nums, net: isNaN(net) ? null : net,
+        copies: [], kept: null, dupOf: null, reasons: [], status: 'ok', fileName: ''
+      };
+    });
+    return { emps: emps, numCols: numCols, netCol: netCol };
+  }
+
+  /* ---------- 2. payslip PDFs (pdf.js) ---------- */
+  var workerP = null;
+  function loadScript(src) {
+    return new Promise(function (res, rej) {
+      var s = document.createElement('script');
+      s.src = src; s.onload = res;
+      s.onerror = function () { rej(new Error('Could not load ' + src)); };
+      document.head.appendChild(s);
+    });
+  }
+  function withTimeout(p, ms) {
+    return Promise.race([p, new Promise(function (_, rej) { setTimeout(function () { rej(new Error('timeout')); }, ms); })]);
+  }
+  function getPdfWorker() {
+    if (workerP) return workerP;
+    workerP = (async function () {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+      var w = new pdfjsLib.PDFWorker({ name: 'payslip-sorter' });
+      try { await withTimeout(w.promise, 20000); return w; }
+      catch (e) {
+        /* Background worker blocked: run the PDF reader on the page itself instead. */
+        try { w.destroy(); } catch (e2) { /* ignore */ }
+        if (!(window.pdfjsWorker && window.pdfjsWorker.WorkerMessageHandler)) await loadScript(PDFJS_WORKER);
+        var w2 = new pdfjsLib.PDFWorker({ name: 'payslip-sorter-main' });
+        await w2.promise;
+        return w2;
+      }
+    })();
+    workerP.catch(function () { workerP = null; });
+    return workerP;
+  }
+
+  function openError(name, e) {
+    var n = e && e.name;
+    if (n === 'PasswordException') return name + ' is password-protected. Save an unprotected copy from the payroll software and add that instead.';
+    if (n === 'InvalidPDFException') return name + " doesn't look like a valid PDF. Try exporting it again.";
+    return "Couldn't open " + name + '. Try exporting it again from the payroll software.';
+  }
+
+  async function readPdfs(onProgress) {
+    var worker = await getPdfWorker();
+    var docs = [];
+    for (var i = 0; i < state.pdfs.length; i++) {
+      var f = state.pdfs[i];
+      if (!f.bytes) f.bytes = new Uint8Array(await f.file.arrayBuffer());
+      try {
+        docs.push(await pdfjsLib.getDocument({
+          data: f.bytes.slice(), worker: worker, isEvalSupported: false,
+          disableFontFace: true, useSystemFonts: false, verbosity: 0
+        }).promise);
+      } catch (e) {
+        docs.forEach(function (d) { try { d.destroy(); } catch (x) { /* ignore */ } });
+        throw UserError(openError(f.name, e));
+      }
+    }
+    var total = docs.reduce(function (a, d) { return a + d.numPages; }, 0);
+    var done = 0, pages = [];
+    for (var fi = 0; fi < docs.length; fi++) {
+      var doc = docs[fi];
+      for (var n = 1; n <= doc.numPages; n++) {
+        var page = await doc.getPage(n);
+        var tc = await page.getTextContent();
+        pages.push(makePage(fi, n, tc.items));
+        page.cleanup();
+        done++;
+        onProgress(done, total);
+      }
+      await doc.destroy();
+    }
+    return { pages: pages, total: total };
+  }
+
+  var NET_RE = /NET\s*PAY\b[^\d\n£]{0,20}£?\s*(-?[\d,]*\d\.\d{2})/i;
+  var DATE_RE = /\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/g;
+  var NI_RE = /\b[A-CEGHJ-PR-TW-Z][A-CEGHJ-NPR-TW-Z]\s?\d{2}\s?\d{2}\s?\d{2}\s?[A-D]\b/;
+
+  function makePage(fi, n, items) {
+    var its = items.filter(function (i) { return typeof i.str === 'string' && i.str.trim() !== ''; });
+    var raw = its.map(function (i) { return i.str; }).join(' ').replace(/\s+/g, ' ').trim();
+    /* rebuild visual lines from positions, so a label and its amount sit together */
+    var pos = its.map(function (i) { return { s: i.str, x: i.transform[4], y: i.transform[5] }; });
+    pos.sort(function (a, b) { return (b.y - a.y) || (a.x - b.x); });
+    var lines = [];
+    pos.forEach(function (it) {
+      var last = lines[lines.length - 1];
+      if (last && Math.abs(last.y - it.y) <= 3) last.items.push(it);
+      else lines.push({ y: it.y, items: [it] });
+    });
+    var layout = lines.map(function (l) {
+      return l.items.sort(function (a, b) { return a.x - b.x; }).map(function (i) { return i.s; }).join(' ').replace(/\s+/g, ' ').trim();
+    }).join('\n');
+    var netM = layout.match(NET_RE) || raw.match(NET_RE);
+    return {
+      fi: fi, n: n, raw: raw, layout: layout,
+      normRaw: norm(raw), normLayout: norm(layout),
+      net: netM ? parseFloat(netM[1].replace(/,/g, '')) : null,
+      date: findDate(layout) || findDate(raw),
+      hasNI: NI_RE.test(raw.toUpperCase()),
+      emp: -1, how: null, ambiguous: null
+    };
+  }
+  function findDate(text) {
+    DATE_RE.lastIndex = 0;
+    var m;
+    while ((m = DATE_RE.exec(text))) {
+      var d = +m[1], mo = +m[2], y = +m[3];
+      if (d >= 1 && d <= 31 && mo >= 1 && mo <= 12 && y >= 2000 && y <= 2100) {
+        return { d: d, m: mo, y: y, str: pad(d) + '/' + pad(mo) + '/' + y, ym: y + '-' + pad(mo) };
+      }
+    }
+    return null;
+  }
+
+  /* ---------- 3. matching ---------- */
+  function matchPage(p, emps) {
+    var hay = [' ' + p.normRaw + ' ', ' ' + p.normLayout + ' '];
+    var best = [], bestLen = 0, how = null;
+    function consider(e, len) {
+      if (len > bestLen) { best = [e]; bestLen = len; }
+      else if (len === bestLen) best.push(e);
+    }
+    emps.forEach(function (e) {
+      if (e.key && (hay[0].indexOf(' ' + e.key + ' ') >= 0 || hay[1].indexOf(' ' + e.key + ' ') >= 0)) consider(e, e.key.length);
+    });
+    if (best.length) how = 'exact';
+    if (!best.length) {
+      var ns = [p.normRaw.replace(/ /g, ''), p.normLayout.replace(/ /g, '')];
+      emps.forEach(function (e) {
+        if (e.keyNS.length >= 6 && (ns[0].indexOf(e.keyNS) >= 0 || ns[1].indexOf(e.keyNS) >= 0)) consider(e, e.keyNS.length);
+      });
+      if (best.length) how = 'joined';
+    }
+    if (!best.length) {
+      var words = new Set((p.normRaw + ' ' + p.normLayout).split(' '));
+      emps.forEach(function (e) {
+        if (e.tokens.length >= 2 && e.tokens.every(function (t) { return words.has(t); })) consider(e, e.key.length);
+      });
+      if (best.length) how = 'loose';
+    }
+    if (!best.length) return null;
+    if (best.length > 1) return { ambiguous: best };
+    return { emp: best[0], how: how };
+  }
+
+  var HOUSE_STOP = new Set(['the', 'house', 'lodge', 'home', 'homes', 'care', 'court', 'cottage', 'hall', 'view', 'road', 'site', 'unit', 'ltd', 'limited', 'and', 'of', 'at', 'residential', 'childrens', 'children']);
+  function houseKeys(houses) {
+    var toks = houses.map(function (hs) { return norm(hs).split(' ').filter(Boolean); });
+    return houses.map(function (hs, i) {
+      var others = new Set();
+      toks.forEach(function (t, j) { if (j !== i) t.forEach(function (w) { others.add(w); }); });
+      var cand = toks[i].filter(function (w) { return w.length >= 3 && !HOUSE_STOP.has(w) && !others.has(w); });
+      var keys = [];
+      if (cand.length) {
+        keys.push(cand[0]);
+        if (/s$/.test(cand[0]) && cand[0].length > 4) keys.push(cand[0].slice(0, -1));
+      }
+      keys.push(norm(hs));
+      return keys.filter(Boolean);
+    });
+  }
+  function fileMatchesKey(fileNorm, key) {
+    if (!key) return false;
+    if (key.indexOf(' ') >= 0) return fileNorm.indexOf(key) >= 0;
+    if (key.length >= 4) return fileNorm.indexOf(key) >= 0;
+    return new RegExp('(^|[^a-z])' + key).test(fileNorm);
+  }
+  function houseForFile(fileName, houses, keys) {
+    var fn = norm(fileName.replace(/\.pdf$/i, ''));
+    var hits = [];
+    houses.forEach(function (hs, i) {
+      if (keys[i].some(function (k) { return fileMatchesKey(fn, k); })) hits.push(hs);
+    });
+    return hits.length === 1 ? hits[0] : null;
+  }
+
+  /* UK tax month: month 1 runs 6 April to 5 May */
+  function taxMonth(d) {
+    var tm = d.d >= 6 ? d.m - 3 : d.m - 4;
+    if (tm <= 0) tm += 12;
+    var start = (d.m > 4 || (d.m === 4 && d.d >= 6)) ? d.y : d.y - 1;
+    return { tm: tm, year: start + '-' + pad((start + 1) % 100) };
+  }
+
+  function where(p) { return state.pdfs[p.fi].name + ' page ' + p.n; }
+  function snippet(p) {
+    var line = (p.layout.split('\n').find(function (l) { return /[a-z]{3,}/i.test(l); }) || p.raw).trim();
+    return line.length > 90 ? line.slice(0, 87) + '…' : line;
+  }
+  /* best guess at the name on a page nobody matched: a title followed by capitalised words */
+  var GUESS_RE = /\b(?:Mr|Mrs|Ms|Miss|Mx|Dr)\.?\s+([A-Z][A-Za-z'’-]+(?!\w)(?:\s+[A-Z][A-Za-z'’-]+(?!\w)){0,3})/;
+  function guessName(p) {
+    var m = GUESS_RE.exec(p.layout) || GUESS_RE.exec(p.raw);
+    return m ? m[1].replace(/\s+/g, ' ').trim() : '';
+  }
+  function houseText(hs) { return hs ? hs : NO_HOUSE; }
+
+  function analyse(summary, read, last) {
+    var emps = summary.emps;
+    var pages = read.pages;
+    var houses = [];
+    emps.forEach(function (e) { if (e.house && houses.indexOf(e.house) < 0) houses.push(e.house); });
+    var keys = houseKeys(houses);
+    var fileHouse = state.pdfs.map(function (f) { return houseForFile(f.name, houses, keys); });
+    var issues = [];
+    function issue(pri, e, what, todo) { issues.push({ pri: pri, e: e, what: what, todo: todo, seq: issues.length }); }
+    function general(pri, what, todo) { issues.push({ pri: pri, general: true, what: what, todo: todo, seq: issues.length }); }
+
+    /* people who share a name on the summary */
+    var rowsByKey = new Map();
+    emps.forEach(function (e) {
+      if (!e.key) return;
+      if (!rowsByKey.has(e.key)) rowsByKey.set(e.key, []);
+      rowsByKey.get(e.key).push(e);
+    });
+    rowsByKey.forEach(function (list) { for (var i = 1; i < list.length; i++) list[i].dupOf = list[0]; });
+    var matchable = emps.filter(function (e) { return e.key && !e.dupOf; });
+
+    /* match every page */
+    pages.forEach(function (p) {
+      if (p.raw.length < 3) return;
+      var m = matchPage(p, matchable);
+      if (!m) return;
+      if (m.ambiguous) { p.ambiguous = m.ambiguous; return; }
+      p.emp = m.emp.idx; p.how = m.how;
+      m.emp.copies.push(p);
+    });
+    /* same name twice: different versions of the payslip are shared out in page order */
+    rowsByKey.forEach(function (list) {
+      if (list.length < 2) return;
+      var distinct = [];
+      list[0].copies.forEach(function (p) {
+        var g = distinct.find(function (d) { return d[0].normRaw === p.normRaw; });
+        if (g) g.push(p); else distinct.push([p]);
+      });
+      list.forEach(function (e, i) { e.copies = i < distinct.length ? distinct[i] : []; });
+      for (var j = list.length; j < distinct.length; j++) list[list.length - 1].copies = list[list.length - 1].copies.concat(distinct[j]);
+      list.forEach(function (e) { e.copies.forEach(function (p) { p.emp = e.idx; }); });
+    });
+
+    /* pay date: the most common one decides the month */
+    var ymCount = new Map(), dateCount = new Map();
+    pages.forEach(function (p) {
+      if (!p.date) return;
+      ymCount.set(p.date.ym, (ymCount.get(p.date.ym) || 0) + 1);
+      dateCount.set(p.date.str, { d: p.date, c: ((dateCount.get(p.date.str) || {}).c || 0) + 1 });
+    });
+    var topYm = null, topYmN = 0;
+    ymCount.forEach(function (c, k) { if (c > topYmN) { topYm = k; topYmN = c; } });
+    var payDate = null, payDateN = 0;
+    dateCount.forEach(function (v) { if (v.d.ym === topYm && v.c > payDateN) { payDate = v.d; payDateN = v.c; } });
+    var month = payDate ? {
+      short: MONTHS[payDate.m - 1].slice(0, 3) + ' ' + payDate.y,
+      long: MONTHS[payDate.m - 1] + ' ' + payDate.y,
+      payDate: payDate, tax: taxMonth(payDate)
+    } : null;
+
+    var niPages = pages.filter(function (p) { return p.emp >= 0 && p.hasNI; }).length;
+    var matchedPages = pages.filter(function (p) { return p.emp >= 0; }).length;
+    var checkNI = matchedPages > 0 && niPages >= matchedPages / 2;
+    var hasNetCol = summary.netCol >= 0;
+    var duplicatesRemoved = 0, missing = 0, mismatches = 0;
+
+    emps.forEach(function (e) {
+      if (e.dupOf) {
+        e.status = 'check';
+        e.reasons.push('Same name as row ' + e.dupOf.sheetRow);
+        issue('MEDIUM', e, 'This name is on the payroll summary twice (rows ' + e.dupOf.sheetRow + ' and ' + e.sheetRow + ').' + (e.copies.length ? ' Payslips with this name were shared out in page order.' : ' Only one payslip was found for the name, so it went to the first row.'),
+          'Check whether these are two different people or a row added by mistake' + (e.copies.length ? ', and that each payslip went to the right person.' : '.'));
+        if (!e.copies.length) return;
+      }
+      if (e.noHouse) { e.status = 'check'; e.reasons.push('No House on the summary'); }
+      if (!e.copies.length) {
+        missing++;
+        e.status = 'check';
+        e.reasons.push('No payslip found');
+        issue('HIGH', e, 'On the payroll summary but no payslip was found in any of the PDFs.', 'Get this payslip from the payroll software and run the sort again with it added.');
+        return;
+      }
+      /* keep one copy: prefer the one from this home's own file */
+      var kept = (!e.noHouse && e.copies.find(function (p) { return fileHouse[p.fi] === e.house; })) || e.copies[0];
+      e.kept = kept;
+      if (e.copies.length > 1) {
+        duplicatesRemoved += e.copies.length - 1;
+        var identical = e.copies.every(function (p) { return p.normRaw === kept.normRaw; });
+        var list = e.copies.map(where).join(', ');
+        if (identical) {
+          issue('LOW', e, 'Payslip found ' + e.copies.length + ' times (' + list + '). The copies are identical.', function () { return 'Nothing to do. One copy is kept and filed under ' + homeOfEmp(e) + '.'; });
+        } else {
+          var nets = e.copies.map(function (p) { return p.net == null ? 'not readable' : money(p.net); });
+          issue('MEDIUM', e, 'Payslip found ' + e.copies.length + ' times (' + list + ') and the copies are not identical (net pay: ' + nets.join(' / ') + ').', 'Check which version is correct. The copy from ' + where(kept) + ' was kept.');
+        }
+      }
+      if (!e.noHouse) e.copies.forEach(function (p) {
+        var fh = fileHouse[p.fi];
+        if (fh && fh !== e.house) {
+          issue('MEDIUM', e, 'A copy was in ' + where(p) + ', but the payroll summary lists this person under ' + e.house + '.', function () { return 'Filed under ' + homeOfEmp(e) + ' as the summary says. If they have moved home, update the summary.'; });
+        }
+      });
+      if (kept.how === 'joined' || kept.how === 'loose') {
+        issue('LOW', e, 'Matched to ' + where(kept) + ' by name parts only (the name is laid out differently on the payslip).', 'Open the payslip and confirm it is this person.');
+      }
+      /* net pay */
+      if (hasNetCol) {
+        if (kept.net == null) {
+          e.status = 'check';
+          e.reasons.push('Net pay not readable on payslip');
+          issue('MEDIUM', e, "Couldn't read the net pay on the payslip (" + where(kept) + '), so it was not checked against the summary.', 'Check the net pay on the payslip by eye.');
+        } else if (e.net != null && pence(kept.net) !== pence(e.net)) {
+          mismatches++;
+          e.status = 'check';
+          var diff = round2(kept.net - e.net);
+          e.reasons.push('Payslip ' + money(kept.net) + ', summary ' + money(e.net));
+          issue('HIGH', e, 'Net pay on the payslip is ' + money(kept.net) + ' but the summary says ' + money(e.net) + ' (difference ' + money(Math.abs(diff)) + ').', 'Check which figure is right and correct the other before anyone is paid.');
+        }
+        /* leaver safety net */
+        if (e.net == null || pence(e.net) === 0) {
+          issue('LOW', e, 'Check: £0 net pay on summary (leaver?). The summary shows ' + (e.net == null ? 'no net pay' : '£0.00') + ' for this person, but a payslip was found' + (kept.net != null ? ' (net ' + money(kept.net) + ')' : '') + '.',
+            'If they have left, check their final pay is right. Otherwise correct the summary.');
+        }
+      }
+      if (month && kept.date && kept.date.ym !== month.payDate.ym) {
+        e.status = 'check';
+        e.reasons.push('Dated ' + kept.date.str);
+        issue('MEDIUM', e, 'This payslip is dated ' + kept.date.str + ', but most payslips are dated ' + month.payDate.str + '.', 'Check it is this month’s payslip and not an old one.');
+      }
+      if (checkNI && !kept.hasNI) {
+        issue('LOW', e, 'No National Insurance number on the payslip.', 'Ask the employee for their NI number and update payroll.');
+      }
+    });
+
+    /* pages that match nobody (identical copies are merged) */
+    var unmatched = [];
+    var byText = new Map();
+    pages.forEach(function (p) {
+      if (p.emp >= 0) return;
+      var k = p.raw.length >= 3 ? p.normRaw : null;
+      if (k && byText.has(k)) { byText.get(k).copies.push(p); duplicatesRemoved++; return; }
+      var u = { page: p, copies: [p] };
+      unmatched.push(u);
+      if (k) byText.set(k, u);
+    });
+    var lastEmps = last ? last.emps.filter(function (e) { return e.key; }) : [];
+    unmatched.forEach(function (u, i) {
+      var p = u.page;
+      u.id = i;
+      u.label = 'Unmatched page ' + (i + 1);
+      u.empty = p.raw.length < 3;
+      u.guess = u.empty ? '' : guessName(p);
+      if (!u.empty && lastEmps.length) {
+        var lm = matchPage(p, lastEmps);
+        if (lm && lm.emp) { u.lastHouse = lm.emp.house; u.lastName = lm.emp.display; }
+      }
+      u.name = u.guess || u.lastName || '';
+    });
+
+    /* changes since last month */
+    var changes = null;
+    if (last) {
+      var thisBy = new Map(), lastBy = new Map();
+      emps.forEach(function (e) { if (e.key && !thisBy.has(e.key)) thisBy.set(e.key, e); });
+      last.emps.forEach(function (e) { if (e.key && !lastBy.has(e.key)) lastBy.set(e.key, e); });
+      changes = { file: last.fileName, starters: [], leavers: [], moved: [] };
+      thisBy.forEach(function (e, k) {
+        var o = lastBy.get(k);
+        if (!o) changes.starters.push({ name: e.display, house: e.house });
+        else if (norm(o.house) !== norm(e.house)) changes.moved.push({ name: e.display, from: o.house, to: e.house });
+      });
+      lastBy.forEach(function (o, k) { if (!thisBy.has(k)) changes.leavers.push({ name: o.display, house: o.house }); });
+    }
+
+    if (!hasNetCol) general('LOW', 'The payroll summary has no "Net Pay" column, so net pay was not checked.', 'Add a Net Pay column to the summary if you want the amounts checked.');
+    if (!month) general('MEDIUM', "Couldn't find a pay date (dd/mm/yyyy) on the payslips.", 'Type the month into the Month box before downloading.');
+
+    return {
+      summary: summary, last: last, emps: emps, houses: houses, pages: pages, totalPages: read.total,
+      fileHouse: fileHouse, staticIssues: issues, unmatched: unmatched, month: month, changes: changes,
+      hasNetCol: hasNetCol,
+      counts: { employees: emps.length, pages: read.total, duplicates: duplicatesRemoved, missing: missing, mismatches: mismatches }
+    };
+  }
+
+  /* issues that depend on choices made on screen are rebuilt every time */
+  function issuesNow() {
+    var r = state.result;
+    var out = r.staticIssues.slice();
+    var seq = 100000;
+    r.emps.forEach(function (e) {
+      if (!e.noHouse) return;
+      var hs = effHouse(e);
+      if (hs == null) {
+        out.push({ pri: 'HIGH', e: e, seq: seq++,
+          what: 'Row ' + e.sheetRow + ' on the payroll summary has no House, so ' + (e.kept ? 'their payslip can’t be filed in a home. It is in the Unmatched folder for now.' : 'they don’t belong to any home.'),
+          todo: 'Choose a home for them under “File these by hand”, and add the House to the summary.' });
+      } else {
+        out.push({ pri: 'MEDIUM', e: e, seq: seq++,
+          what: 'Row ' + e.sheetRow + ' on the payroll summary has no House. You chose ' + folderOf(hs) + ' by hand.',
+          todo: 'Add the House to the payroll summary for next month.' });
+      }
+    });
+    r.unmatched.forEach(function (u) {
+      var p = u.page, hs = pageHouse(u);
+      var loc = u.copies.map(where).join(', ');
+      var lastNote = u.lastHouse != null ? ' This name was on last month’s summary under ' + houseText(u.lastHouse) + '.' : '';
+      if (hs != null) {
+        out.push({ pri: 'MEDIUM', u: u, seq: seq++,
+          what: 'Filed manually: not on the Payroll Summary. ' + loc + ' was filed under ' + folderOf(hs) + ' by hand.' + lastNote,
+          todo: 'Add this person to the payroll summary if they should be on it, and check their pay is right.' });
+        return;
+      }
+      var what;
+      if (u.empty) what = where(p) + ' has no readable text, so no name could be found. It may be a scanned image.';
+      else if (p.ambiguous) what = loc + ' matches more than one person on the summary (' + p.ambiguous.map(function (e) { return e.display; }).join(', ') + ').';
+      else what = loc + " doesn't match anyone on the payroll summary. " + (u.guess ? 'The name on it looks like “' + u.guess + '”.' : 'It starts: “' + snippet(p) + '”');
+      out.push({ pri: 'HIGH', u: u, seq: seq++, what: what + lastNote,
+        todo: 'Choose a home for it under “File these by hand”, or leave it in the Unmatched folder. If this person should be paid, add them to the summary.' });
+    });
+    out.sort(function (a, b) { return (PRI_ORDER[a.pri] - PRI_ORDER[b.pri]) || (a.seq - b.seq); });
+    return out;
+  }
+  function issueWho(i) {
+    if (i.e) return i.e.display;
+    if (i.u) return i.u.name ? i.u.label + ': ' + i.u.name : i.u.label;
+    return '';
+  }
+  function issueHome(i) {
+    if (i.e) return homeOfEmp(i.e);
+    if (i.u) return folderOf(pageHouse(i.u));
+    return '';
+  }
+
+  /* ---------- run ---------- */
+  function libsMissing() {
+    var miss = [];
+    if (!window.XLSX) miss.push('Excel reader');
+    if (!window.pdfjsLib) miss.push('PDF reader');
+    if (!window.PDFLib) miss.push('PDF maker');
+    if (!window.JSZip) miss.push('ZIP maker');
+    return miss;
+  }
+  function setBusy(b) {
+    state.busy = b;
+    renderFiles();
+  }
+
+  async function run() {
+    if (state.busy || !state.xlsx || !state.pdfs.length) return;
+    hideError();
+    var miss = libsMissing();
+    if (miss.length) { showError('Part of the tool did not load (' + miss.join(', ') + '). Check the internet connection and reload the page.'); return; }
+    setBusy(true);
+    $('results').hidden = true;
+    state.result = null;
+    state.srcDocs = new Map();
+    state.pick = freshPick();
+    try {
+      progress('Reading the payroll summary…', 0.02);
+      var summary = await readSummary(state.xlsx, null);
+      var last = null;
+      if (state.last) {
+        progress('Reading last month’s summary…', 0.04);
+        last = await readSummary(state.last, 'last month’s summary');
+      }
+      progress('Opening the payslip PDFs…', 0.06);
+      var read = await readPdfs(function (done, total) {
+        progress('Reading payslips… page ' + done + ' of ' + total, 0.06 + 0.9 * done / total);
+      });
+      progress('Sorting…', 0.98);
+      state.result = analyse(summary, read, last);
+      state.month = state.result.month ? state.result.month.short : '';
+      hideProgress();
+      renderResults(true);
+      $('results').hidden = false;
+      try { $('results').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); } catch (e) { /* ignore */ }
+    } catch (e) {
+      hideProgress();
+      console.error(e);
+      showError(e && e.user ? e.message : 'Something went wrong while reading the files (' + ((e && e.message) || e) + '). Check they are the right files and try again.');
+    } finally {
+      setBusy(false);
+    }
+  }
+  $('sortBtn').addEventListener('click', run);
+
+  function restart() {
+    if (state.busy) return;
+    state.xlsx = null; state.last = null; state.pdfs = []; state.result = null; state.month = '';
+    state.srcDocs = new Map(); state.pick = freshPick(); state.folderDraft = {};
+    $('results').hidden = true;
+    $('skipNote').hidden = true;
+    $('dlStatus').textContent = '';
+    hideError(); hideProgress(); renderFiles();
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    try { $('xlsxInput').focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+  }
+  $('restartTop').addEventListener('click', restart);
+  $('restartBottom').addEventListener('click', restart);
+
+  /* ---------- results on screen ---------- */
+  function keepFocus(fn) {
+    var a = document.activeElement, id = a && a.id, s = null, en = null;
+    try { if (a && typeof a.selectionStart === 'number') { s = a.selectionStart; en = a.selectionEnd; } } catch (x) { /* not a text field */ }
+    fn();
+    if (id && (!document.activeElement || document.activeElement.id !== id)) {
+      var n = document.getElementById(id);
+      if (n) {
+        try { n.focus({ preventScroll: true }); } catch (x) { /* ignore */ }
+        if (s != null) { try { n.setSelectionRange(s, en); } catch (x) { /* ignore */ } }
+      }
+    }
+  }
+
+  function renderResults(fresh) {
+    var r = state.result;
+    if (!r) return;
+    var m = r.month;
+    $('resTitle').textContent = (m ? (safeName(state.month) && safeName(state.month) !== m.short ? safeName(state.month) : m.long) : monthLabel()) + ' payroll';
+    var meta = [];
+    if (m) meta.push('Pay date ' + m.payDate.str + ' · tax month ' + m.tax.tm + ' of ' + m.tax.year);
+    meta.push(r.summary.fileName + ' (sheet “' + r.summary.sheet + '”, headings on row ' + r.summary.headerRow + ')');
+    if (r.last) meta.push('last month: ' + r.last.fileName);
+    meta.push(plural(state.pdfs.length, 'PDF'));
+    $('resMeta').textContent = meta.join(' · ');
+    if (fresh) {
+      $('companyInput').value = state.company;
+      $('monthInput').value = state.month;
+      $('monthHelp').textContent = m ? 'Read from the pay date ' + m.payDate.str + '. Change it if needed.' : 'No pay date found. Type the month, e.g. Sep 2026.';
+      state.folderDraft = {};
+      renderChanges();
+    }
+    renderDynamic();
+  }
+
+  function renderDynamic() {
+    var r = state.result;
+    if (!r) return;
+    keepFocus(function () {
+      var ctx = context();
+      var gl = groupsFor(r);
+      renderStats(gl);
+      renderIssues();
+      renderManual(ctx);
+      renderFolderTable(gl);
+      $('topPath').textContent = ctx.top + '.zip';
+      $('homeButtons').replaceChildren.apply($('homeButtons'), gl.groups.map(function (g) {
+        return h('button', { type: 'button', class: 'btn ghost small', 'data-folder': g.folder, onclick: function () { downloadHome(g.folder, this); } }, g.folder + ' only');
+      }));
+      renderHomes(gl);
+    });
+  }
+
+  function renderStats(gl) {
+    var r = state.result, c = r.counts;
+    var filedSummary = r.emps.filter(function (e) { return e.kept && effHouse(e) != null; }).length;
+    var byHand = r.unmatched.length - gl.loose.pages.length;
+    var notFiled = gl.loose.pages.length + gl.loose.emps.filter(function (e) { return e.kept; }).length;
+    var stats = [
+      { v: c.employees, l: 'On the summary', s: plural(r.houses.length, 'home') },
+      { v: c.pages, l: 'Pages read', s: notFiled ? plural(notFiled, 'page') + ' not filed yet' : 'all filed', tone: notFiled ? 'bad' : '' },
+      { v: filedSummary + byHand, l: 'Payslips filed', s: byHand ? 'incl. ' + byHand + ' filed by hand' : 'one per person', tone: filedSummary === c.employees && !notFiled ? 'good' : '' },
+      { v: c.duplicates, l: 'Duplicates removed', s: c.duplicates ? 'extra copies left out' : 'none found' },
+      { v: c.missing, l: 'Missing payslips', s: c.missing ? 'see issues' : 'none', tone: c.missing ? 'bad' : 'good' },
+      { v: c.mismatches, l: 'Net pay mismatches', s: r.hasNetCol ? (c.mismatches ? 'see issues' : 'all match') : 'not checked', tone: c.mismatches ? 'bad' : (r.hasNetCol ? 'good' : '') }
+    ];
+    $('stats').replaceChildren.apply($('stats'), stats.map(function (s) {
+      return h('div', { class: 'stat' + (s.tone ? ' ' + s.tone : '') },
+        h('span', { class: 'v', text: String(s.v) }), h('span', { class: 'l', text: s.l }), h('span', { class: 's', text: s.s }));
+    }));
+  }
+
+  function renderIssues() {
+    var r = state.result;
+    var issues = issuesNow();
+    var counts = { HIGH: 0, MEDIUM: 0, LOW: 0 };
+    issues.forEach(function (i) { counts[i.pri]++; });
+    var chips = [];
+    if (counts.HIGH) chips.push(h('span', { class: 'chip high', text: counts.HIGH + ' high' }));
+    if (counts.MEDIUM) chips.push(h('span', { class: 'chip medium', text: counts.MEDIUM + ' medium' }));
+    if (counts.LOW) chips.push(h('span', { class: 'chip low', text: counts.LOW + ' low' }));
+    $('issueCounts').replaceChildren.apply($('issueCounts'), chips);
+    var list = $('issues');
+    if (!issues.length) {
+      list.replaceChildren(h('li', { class: 'issue none' }, h('span', { class: 'chip ok', text: 'All clear' }),
+        h('p', { text: 'Every person on the summary has exactly one payslip' + (r.hasNetCol ? ' and the net pay matches.' : '.') })));
+      return;
+    }
+    list.replaceChildren.apply(list, issues.map(function (i) {
+      var home = issueHome(i);
+      return h('li', { class: 'issue' },
+        h('span', { class: 'chip ' + i.pri.toLowerCase(), text: i.pri }),
+        h('div', null,
+          h('p', { class: 'who' }, issueWho(i) || 'Whole payroll', home ? h('span', { text: ' · ' + home }) : null),
+          h('p', { class: 'what', text: txt(i.what) }),
+          h('p', { class: 'todo' }, h('b', { text: 'What to do: ' }), txt(i.todo))));
+    }));
+  }
+
+  function renderChanges() {
+    var r = state.result, box = $('changes'), chipBox = $('changeChips');
+    if (!r.changes) {
+      chipBox.replaceChildren();
+      box.replaceChildren(h('p', { class: 'soft-note', text: 'Add last month’s summary to see starters, leavers and moves.' }));
+      return;
+    }
+    var c = r.changes;
+    chipBox.replaceChildren(h('span', { class: 'chip info', text: 'Info' }));
+    function col(id, title, sub, items) {
+      return h('div', { class: 'card change-col', id: id },
+        h('div', { class: 'cc-head' }, h('h4', { text: title }), h('span', { class: 'chip info', text: String(items.length) })),
+        h('p', { class: 'cc-sub', text: sub }),
+        items.length ? h('ul', { class: 'cc-list' }, items.map(function (it) {
+          return h('li', null, h('span', { class: 'pname', text: it[0] }), h('span', { class: 'cc-home', text: it[1] }));
+        })) : h('p', { class: 'cc-none', text: 'None' }));
+    }
+    var none = !c.starters.length && !c.leavers.length && !c.moved.length;
+    box.replaceChildren(
+      h('p', { class: 'block-note', text: 'Compared with ' + c.file + '. For information only' + (none ? ': no starters, leavers or moves.' : '; nothing here needs fixing.') }),
+      h('div', { class: 'changes' },
+        col('chStarters', 'New starters', 'On this month’s summary, not last month’s', c.starters.map(function (x) { return [x.name, houseText(x.house)]; })),
+        col('chLeavers', 'Leavers', 'On last month’s summary, not this month’s', c.leavers.map(function (x) { return [x.name, houseText(x.house)]; })),
+        col('chMoved', 'Moved home', 'Home is different from last month', c.moved.map(function (x) { return [x.name, houseText(x.from) + ' → ' + houseText(x.to)]; }))));
+  }
+
+  function homeOptions(selected, emptyLabel) {
+    var r = state.result;
+    var sel = selected == null ? '' : String(selected);
+    return [h('option', { value: '', text: emptyLabel, selected: sel === '' })].concat(r.houses.map(function (hs, i) {
+      var f = folderOf(hs);
+      return h('option', { value: String(i), text: f === hs ? f : f + ' (' + hs + ')', selected: sel === String(i) });
+    }));
+  }
+  function renderManual(ctx) {
+    var r = state.result;
+    var blanks = r.emps.filter(function (e) { return e.noHouse; });
+    var card = $('manualCard');
+    if (!blanks.length && !r.unmatched.length) { card.hidden = true; $('manualList').replaceChildren(); return; }
+    card.hidden = false;
+    var items = [];
+    blanks.forEach(function (e) {
+      var hs = effHouse(e);
+      var sel = h('select', { id: 'assign-e' + e.idx, onchange: function (ev) { state.pick.emp[e.idx] = ev.target.value; renderDynamic(); } }, homeOptions(state.pick.emp[e.idx], 'Leave without a home'));
+      items.push(h('li', { class: 'mi' },
+        h('div', { class: 'mi-info' },
+          h('span', { class: 'chip ' + (hs == null ? 'high' : 'medium'), text: hs == null ? 'No House on summary' : 'Home chosen' }),
+          h('p', { class: 'mi-name', text: e.display }),
+          h('p', { class: 'mi-meta', text: 'Row ' + e.sheetRow + ' on the summary has no House · ' + (e.kept ? where(e.kept) + (e.kept.net != null ? ' · net ' + money(e.kept.net) : '') : 'no payslip found') })),
+        h('div', { class: 'mi-controls' },
+          h('label', { class: 'field', for: 'assign-e' + e.idx }, 'Home', sel))));
+    });
+    r.unmatched.forEach(function (u) {
+      var hs = pageHouse(u);
+      var p = u.page;
+      var sel = h('select', { id: 'assign-u' + u.id, onchange: function (ev) { state.pick.page[u.id] = ev.target.value; renderDynamic(); } }, homeOptions(state.pick.page[u.id], 'Leave in Unmatched'));
+      var nameIn = h('input', { type: 'text', id: 'name-u' + u.id, value: pageNameValue(u, ctx), autocomplete: 'off', spellcheck: 'false', 'aria-label': 'File name for ' + u.label });
+      nameIn.addEventListener('input', function () { state.pick.pageName[u.id] = nameIn.value; renderDynamic(); });
+      items.push(h('li', { class: 'mi' },
+        h('div', { class: 'mi-info' },
+          h('span', { class: 'chip ' + (hs == null ? 'high' : 'medium'), text: hs == null ? u.label : 'Filed by hand' }),
+          h('p', { class: 'mi-name', text: u.name ? u.name : (u.empty ? 'No readable text on this page' : 'No name found on this page') }),
+          h('p', { class: 'mi-meta', text: u.copies.map(where).join(', ') + (p.net != null ? ' · net ' + money(p.net) : '') + ' · not on the payroll summary' }),
+          u.lastHouse != null ? h('p', { class: 'mi-hint', text: 'On last month’s summary under ' + houseText(u.lastHouse) + '.' }) : null),
+        h('div', { class: 'mi-controls two' },
+          h('label', { class: 'field', for: 'assign-u' + u.id }, 'Home', sel),
+          h('label', { class: 'field', for: 'name-u' + u.id }, 'File name', h('span', { class: 'fn' }, nameIn, h('span', { class: 'ext', text: '.pdf' }))))));
+    });
+    $('manualList').replaceChildren.apply($('manualList'), items);
+  }
+
+  function renderFolderTable(gl) {
+    var r = state.result;
+    var tbody = $('folderRows');
+    tbody.replaceChildren.apply(tbody, r.houses.map(function (house, i) {
+      var emps = r.emps.filter(function (e) { return effHouse(e) === house; });
+      var kept = emps.filter(function (e) { return e.kept; }).length;
+      var byHand = r.unmatched.filter(function (u) { return pageHouse(u) === house; }).length;
+      var count = kept + ' of ' + emps.length + (byHand ? ' + ' + byHand + ' by hand' : '');
+      var custom = state.folders[house];
+      var draft = state.folderDraft[house];
+      var value = draft != null ? draft : (custom != null && safeName(custom) ? custom : defaultFolder(house));
+      var input = h('input', { type: 'text', id: 'folder-' + i, value: value, 'aria-label': 'Folder name for ' + house, autocomplete: 'off' });
+      input.addEventListener('input', function () {
+        var v = input.value;
+        state.folderDraft[house] = v;
+        if (!safeName(v) || safeName(v) === defaultFolder(house)) delete state.folders[house];
+        else state.folders[house] = v;
+        store.set(LS_FOLDERS, JSON.stringify(state.folders));
+        renderDynamic();
+      });
+      return h('tr', null, h('td', null, house, h('span', { class: 'cnt', text: count + ' payslips' })), h('td', null, input), h('td', { class: 'num', text: count }));
+    }));
+  }
+
+  function renderHomes(gl) {
+    var cards = gl.groups.map(function (g) {
+      var kept = g.emps.filter(function (e) { return e.kept; });
+      var toCheck = g.emps.filter(function (e) { return e.status === 'check'; }).length + g.manual.length;
+      var total = kept.reduce(function (a, e) { return a + (e.kept.net || 0); }, 0) + g.manual.reduce(function (a, u) { return a + (u.page.net || 0); }, 0);
+      var people = g.emps.map(function (e) {
+        var amt = e.kept ? h('span', { class: 'num', text: e.kept.net == null ? '—' : money(e.kept.net) }) : h('span', { class: 'num missing', text: 'No payslip' });
+        return h('li', null,
+          h('span', { class: 'pname' }, e.display, e.status === 'check' && e.reasons.length ? h('small', { text: e.reasons.join(' · ') }) : null),
+          amt,
+          h('span', { class: 'badge ' + (e.status === 'check' ? 'check' : 'ok'), text: e.status === 'check' ? 'Check' : 'OK' }));
+      }).concat(g.manual.map(function (u) {
+        return h('li', null,
+          h('span', { class: 'pname' }, u.name || u.label, h('small', { class: 'mild', text: 'Not on the summary · filed by hand' })),
+          h('span', { class: 'num', text: u.page.net == null ? '—' : money(u.page.net) }),
+          h('span', { class: 'badge hand', text: 'By hand' }));
+      }));
+      var filed = kept.length + g.manual.length;
+      return h('article', { class: 'card home', 'data-folder': g.folder },
+        h('div', { class: 'home-head' }, h('h4', { text: g.folder }),
+          h('span', { class: 'chip ' + (toCheck ? 'high' : 'ok'), text: toCheck ? toCheck + ' to check' : 'All OK' })),
+        h('p', { class: 'home-meta' }, plural(g.emps.length, 'person', 'people') + ' · ' + plural(filed, 'payslip') + ' filed · net ', h('span', { class: 'num', text: money(round2(total)) })),
+        h('ul', { class: 'people' }, people));
+    });
+    var loose = gl.loose;
+    if (loose.emps.length || loose.pages.length) {
+      cards.push(h('article', { class: 'card home unmatched', 'data-folder': 'Unmatched' },
+        h('div', { class: 'home-head' }, h('h4', { text: 'Unmatched' }), h('span', { class: 'chip high', text: (loose.emps.length + loose.pages.length) + ' to check' })),
+        h('p', { class: 'home-meta', text: 'Not filed in any home yet. Choose homes under “File these by hand”, or these stay in the Unmatched folder of the full download.' }),
+        h('ul', { class: 'people' },
+          loose.emps.map(function (e) {
+            return h('li', null,
+              h('span', { class: 'pname' }, e.display, h('small', { text: 'No House on the summary' })),
+              e.kept ? h('span', { class: 'num', text: e.kept.net == null ? '—' : money(e.kept.net) }) : h('span', { class: 'num missing', text: 'No payslip' }),
+              h('span', { class: 'badge check', text: 'Check' }));
+          }).concat(loose.pages.map(function (u) {
+            return h('li', null,
+              h('span', { class: 'pname' }, u.name ? u.label + ': ' + u.name : u.label, h('small', { text: u.copies.map(where).join(', ') })),
+              h('span', { class: 'num', text: u.page.net == null ? '—' : money(u.page.net) }),
+              h('span', { class: 'badge check', text: 'Check' }));
+          })))));
+    }
+    $('homes').replaceChildren.apply($('homes'), cards);
+  }
+
+  $('companyInput').addEventListener('input', function (e) {
+    state.company = e.target.value;
+    store.set(LS_COMPANY, state.company);
+    renderDynamic();
+  });
+  $('monthInput').addEventListener('input', function (e) {
+    state.month = e.target.value;
+    renderResults(false);
+  });
+
+  /* ---------- 4. building the files (pdf-lib, SheetJS, JSZip) ---------- */
+  function srcDoc(fi) {
+    if (!state.srcDocs.has(fi)) state.srcDocs.set(fi, PDFLib.PDFDocument.load(state.pdfs[fi].bytes, { ignoreEncryption: true, updateMetadata: false }));
+    return state.srcDocs.get(fi);
+  }
+  async function pdfFromPages(pages, title) {
+    var out = await PDFLib.PDFDocument.create();
+    for (var i = 0; i < pages.length; i++) {
+      var src = await srcDoc(pages[i].fi);
+      var copied = await out.copyPages(src, [pages[i].n - 1]);
+      out.addPage(copied[0]);
+    }
+    out.setTitle(title);
+    out.setCreator('Payslip Sorter');
+    out.setProducer('Payslip Sorter');
+    return out.save();
+  }
+
+  var MONEY_FMT = '#,##0.00';
+  function makeSheet(titleLines, header, rows, opts) {
+    opts = opts || {};
+    var aoa = titleLines.map(function (t) { return [t]; });
+    aoa.push([]);
+    var hr = aoa.length;
+    aoa.push(header);
+    rows.forEach(function (r) { aoa.push(r); });
+    var ws = XLSX.utils.aoa_to_sheet(aoa);
+    for (var r = hr + 1; r < aoa.length; r++) {
+      for (var c = 0; c < header.length; c++) {
+        var cell = ws[XLSX.utils.encode_cell({ r: r, c: c })];
+        if (cell && cell.t === 'n' && (!opts.intCols || opts.intCols.indexOf(c) < 0)) cell.z = MONEY_FMT;
+      }
+    }
+    ws['!cols'] = header.map(function (hd, c) {
+      var w = String(hd).length;
+      rows.forEach(function (r) {
+        var v = r[c];
+        var len = v == null ? 0 : (typeof v === 'number' ? money(v).length : String(v).length);
+        if (len > w) w = len;
+      });
+      return { wch: Math.min(Math.max(w + 2, 6), opts.maxWidth || 60) };
+    });
+    if (opts.filter && rows.length) {
+      ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: hr, c: 0 }, e: { r: hr + rows.length - (opts.totalRow ? 1 : 0), c: header.length - 1 } }) };
+    }
+    return ws;
+  }
+  function writeBook(sheets, title, ctx) {
+    var wb = XLSX.utils.book_new();
+    sheets.forEach(function (s) { XLSX.utils.book_append_sheet(wb, s[1], s[0]); });
+    wb.Props = { Title: title, Author: ctx.company || 'Payslip Sorter', Company: ctx.company || '' };
+    return XLSX.write(wb, { bookType: 'xlsx', type: 'array', compression: true });
+  }
+  function madeLine() {
+    var r = state.result;
+    return 'Made with Payslip Sorter on ' + todayGB() + ' from ' + r.summary.fileName + ' and ' + plural(state.pdfs.length, 'PDF') + ' (' + plural(r.totalPages, 'page') + ').';
+  }
+  function empCheck(e) { return e.kept && e.status !== 'check' ? 'OK' : 'CHECK'; }
+
+  /* never let two files share a name: add " (2)", " (3)"… */
+  function namer() {
+    var used = new Set();
+    return function (base) {
+      var name = base, i = 2;
+      while (used.has(name.toLowerCase())) name = base + ' (' + (i++) + ')';
+      used.add(name.toLowerCase());
+      return name + '.pdf';
+    };
+  }
+  function assignFileNames(group, ctx) {
+    var unique = namer();
+    group.emps.forEach(function (e) {
+      e.fileName = e.kept ? unique(safeName(e.display + ' - Payslip ' + ctx.mon) || ('Payslip ' + (e.idx + 1))) : '';
+    });
+    group.manual.forEach(function (u) { u.fileName = unique(pageBase(u, ctx)); });
+  }
+
+  function employeeListBook(group, ctx) {
+    var r = state.result;
+    var numCols = r.summary.numCols;
+    var header = ['#', 'Employee'].concat(numCols.map(function (n) { return n.label; }), ['Net Pay (Payslip)', 'Check', 'Payslip file name']);
+    var sums = numCols.map(function () { return 0; });
+    var payslipSum = 0;
+    var rows = group.emps.map(function (e, i) {
+      var vals = numCols.map(function (n, k) { var v = e.nums[n.ci]; if (v != null) sums[k] += v; return v; });
+      var pn = e.kept ? e.kept.net : null;
+      if (pn != null) payslipSum += pn;
+      return [i + 1, e.display].concat(vals, [pn, empCheck(e), e.kept ? e.fileName : 'MISSING']);
+    });
+    group.manual.forEach(function (u) {
+      if (u.page.net != null) payslipSum += u.page.net;
+      rows.push([rows.length + 1, u.name || u.label].concat(numCols.map(function () { return null; }), [u.page.net, 'NOT ON SUMMARY', u.fileName]));
+    });
+    rows.push([null, 'Total'].concat(sums.map(round2), [round2(payslipSum), null, null]));
+    var title = ctx.prefix + group.folder + ' - Employee List ' + ctx.mon;
+    var ws = makeSheet([title, madeLine()], header, rows, { intCols: [0], totalRow: true, filter: true });
+    return writeBook([['Employee List', ws]], title, ctx);
+  }
+
+  function checkBook(gl, ctx) {
+    var r = state.result;
+    var title = ctx.prefix + 'Payroll Check - ' + ctx.mon;
+    var issueRows = issuesNow().map(function (i, k) {
+      return [k + 1, i.pri, issueWho(i) || '(whole payroll)', issueHome(i), txt(i.what), txt(i.todo)];
+    });
+    if (!issueRows.length) issueRows.push([null, 'OK', '', '', 'No issues found.', 'Nothing to do.']);
+    var wsIssues = makeSheet([title, madeLine()], ['#', 'Priority', 'Employee', 'Home', 'What was found', 'What to do'], issueRows, { intCols: [0], filter: true, maxWidth: 80 });
+
+    var totals = { n: 0, filed: 0, sumNet: 0, payNet: 0 };
+    var homeRows = gl.groups.map(function (g) {
+      var kept = g.emps.filter(function (e) { return e.kept; });
+      var sumNet = g.emps.reduce(function (a, e) { return a + (e.net || 0); }, 0);
+      var payNet = kept.reduce(function (a, e) { return a + (e.kept.net || 0); }, 0) + g.manual.reduce(function (a, u) { return a + (u.page.net || 0); }, 0);
+      var miss = g.emps.length - kept.length;
+      var mism = g.emps.filter(function (e) { return e.kept && e.kept.net != null && e.net != null && pence(e.kept.net) !== pence(e.net); }).length;
+      var other = g.emps.filter(function (e) { return e.status === 'check'; }).length - miss - mism;
+      var notes = [];
+      if (miss) notes.push(plural(miss, 'missing payslip'));
+      if (mism) notes.push(plural(mism, 'net pay mismatch', 'net pay mismatches'));
+      if (g.manual.length) notes.push(g.manual.length + ' filed by hand (not on summary)');
+      if (other > 0) notes.push(plural(other, 'other check'));
+      var filed = kept.length + g.manual.length;
+      totals.n += g.emps.length; totals.filed += filed; totals.sumNet += sumNet; totals.payNet += payNet;
+      return [g.folder, g.emps.length, filed, r.hasNetCol ? round2(sumNet) : null, round2(payNet), r.hasNetCol ? round2(payNet - sumNet) : null, notes.length ? 'CHECK: ' + notes.join(', ') : 'OK'];
+    });
+    var looseKept = gl.loose.emps.filter(function (e) { return e.kept; });
+    var looseCount = gl.loose.pages.length + looseKept.length;
+    if (looseCount || gl.loose.emps.length) {
+      var looseNet = gl.loose.pages.reduce(function (a, u) { return a + (u.page.net || 0); }, 0) + looseKept.reduce(function (a, e) { return a + (e.kept.net || 0); }, 0);
+      var looseSum = gl.loose.emps.reduce(function (a, e) { return a + (e.net || 0); }, 0);
+      totals.n += gl.loose.emps.length; totals.filed += looseCount; totals.sumNet += looseSum; totals.payNet += looseNet;
+      homeRows.push(['Unmatched', gl.loose.emps.length, looseCount, r.hasNetCol ? round2(looseSum) : null, round2(looseNet), null, 'CHECK: not filed in any home']);
+    }
+    homeRows.push(['Total', totals.n, totals.filed, r.hasNetCol ? round2(totals.sumNet) : null, round2(totals.payNet), r.hasNetCol ? round2(totals.payNet - totals.sumNet) : null, '']);
+    var wsHomes = makeSheet([title, madeLine()], ['Home', 'Employees', 'Payslips filed', 'Net pay (summary)', 'Net pay (payslips)', 'Difference', 'Status'], homeRows, { intCols: [1, 2], totalRow: true, filter: true });
+
+    var allRows = r.emps.map(function (e, k) {
+      var pn = e.kept ? e.kept.net : null;
+      var diff = pn != null && e.net != null ? round2(pn - e.net) : null;
+      return [k + 1, e.display, homeOfEmp(e), e.net, pn, diff, empCheck(e), e.kept ? where(e.kept) : 'MISSING', e.copies.length, e.kept ? e.fileName : '', e.reasons.join('; ')];
+    });
+    r.unmatched.forEach(function (u) {
+      var hs = pageHouse(u);
+      allRows.push([allRows.length + 1, u.name || u.label, folderOf(hs), null, u.page.net, null, hs != null ? 'NOT ON SUMMARY' : 'UNMATCHED', u.copies.map(where).join(', '), u.copies.length, u.fileName || '', hs != null ? 'Filed by hand' : 'Not filed in a home']);
+    });
+    var wsAll = makeSheet([title, madeLine()], ['#', 'Employee', 'Home', 'Net pay (summary)', 'Net pay (payslip)', 'Difference', 'Check', 'Payslip used', 'Copies found', 'Payslip file name', 'Notes'], allRows, { intCols: [0, 8], filter: true });
+
+    var chRows = [];
+    if (r.changes) {
+      r.changes.starters.forEach(function (x) { chRows.push(['New starter', x.name, '', houseText(x.house)]); });
+      r.changes.leavers.forEach(function (x) { chRows.push(['Leaver', x.name, houseText(x.house), '']); });
+      r.changes.moved.forEach(function (x) { chRows.push(['Moved home', x.name, houseText(x.from), houseText(x.to)]); });
+      if (!chRows.length) chRows.push(['No changes', '', '', '']);
+    } else {
+      chRows.push(['Last month’s summary was not added, so changes were not checked.', '', '', '']);
+    }
+    var wsCh = makeSheet([title, r.changes ? 'Compared with ' + r.changes.file + '. For information only.' : madeLine()], ['Change', 'Employee', 'Home last month', 'Home this month'], chRows, { filter: !!r.changes });
+
+    return writeBook([['Issues to Check', wsIssues], ['Summary by Home', wsHomes], ['All Employees', wsAll], ['Changes vs Last Month', wsCh]], title, ctx);
+  }
+
+  async function homeEntries(group, ctx) {
+    assignFileNames(group, ctx);
+    var kept = group.emps.filter(function (e) { return e.kept; });
+    var allPages = kept.map(function (e) { return e.kept; }).concat(group.manual.map(function (u) { return u.page; }));
+    var files = [];
+    if (allPages.length) files.push([group.folder + ' - All Payslips ' + ctx.mon + '.pdf', await pdfFromPages(allPages, group.folder + ' - All Payslips ' + ctx.mon)]);
+    files.push([group.folder + ' - Employee List ' + ctx.mon + '.xlsx', employeeListBook(group, ctx)]);
+    for (var i = 0; i < kept.length; i++) {
+      files.push(['Individual Payslips/' + kept[i].fileName, await pdfFromPages([kept[i].kept], kept[i].display + ' - Payslip ' + ctx.mon)]);
+    }
+    for (var j = 0; j < group.manual.length; j++) {
+      var u = group.manual[j];
+      files.push(['Individual Payslips/' + u.fileName, await pdfFromPages([u.page], u.fileName.replace(/\.pdf$/, ''))]);
+    }
+    return files;
+  }
+  async function looseEntries(loose, ctx) {
+    var unique = namer();
+    var items = loose.emps.filter(function (e) { return e.kept; }).map(function (e) {
+      e.fileName = unique(safeName(e.display + ' - Payslip ' + ctx.mon));
+      return { page: e.kept, name: e.fileName };
+    }).concat(loose.pages.map(function (u) {
+      u.fileName = unique(pageBase(u, ctx));
+      return { page: u.page, name: u.fileName };
+    }));
+    if (!items.length) return [];
+    var files = [['Unmatched Pages ' + ctx.mon + '.pdf', await pdfFromPages(items.map(function (it) { return it.page; }), 'Unmatched Pages ' + ctx.mon)]];
+    for (var i = 0; i < items.length; i++) {
+      files.push(['Individual Pages/' + items[i].name, await pdfFromPages([items[i].page], items[i].name.replace(/\.pdf$/, ''))]);
+    }
+    return files;
+  }
+  function zipBlob(entries) {
+    var z = new JSZip(), used = new Set();
+    entries.forEach(function (en) {
+      var path = en[0];
+      var m = /^(.*?)(\.[^./]+)?$/.exec(path), base = m[1], ext = m[2] || '', i = 2;
+      while (used.has(path.toLowerCase())) path = base + ' (' + (i++) + ')' + ext;
+      used.add(path.toLowerCase());
+      z.file(path, en[1]);
+    });
+    return z.generateAsync({ type: 'blob', mimeType: 'application/zip', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+  }
+
+  var dlBusy = false;
+  function dlStatus(text, err) {
+    var s = $('dlStatus');
+    s.textContent = text;
+    s.classList.toggle('err', !!err);
+  }
+  async function withDownload(label, build) {
+    if (dlBusy || !state.result) return;
+    dlBusy = true;
+    var buttons = document.querySelectorAll('#downloadAll, #homeButtons button');
+    buttons.forEach(function (b) { b.disabled = true; });
+    dlStatus('Preparing ' + label + '…');
+    try {
+      var out = await build();
+      var how = await saveFile(out.blob, out.name);
+      if (how === 'declined') dlStatus('Download cancelled.');
+      else if (how === 'saved') dlStatus('Saved ' + out.name + '.');
+      else dlStatus('Downloading ' + out.name + '. Check your downloads folder.');
+    } catch (e) {
+      console.error(e);
+      dlStatus(e && e.message ? e.message : 'The download could not be made. Try again.', true);
+    } finally {
+      document.querySelectorAll('#downloadAll, #homeButtons button').forEach(function (b) { b.disabled = false; });
+      dlBusy = false;
+    }
+  }
+
+  $('downloadAll').addEventListener('click', function () {
+    withDownload('the ZIP', async function () {
+      var ctx = context();
+      var gl = groupsFor(state.result);
+      var entries = [];
+      for (var i = 0; i < gl.groups.length; i++) {
+        dlStatus('Preparing ' + gl.groups[i].folder + '…');
+        var files = await homeEntries(gl.groups[i], ctx);
+        files.forEach(function (f) { entries.push([ctx.top + '/' + gl.groups[i].folder + '/' + f[0], f[1]]); });
+      }
+      (await looseEntries(gl.loose, ctx)).forEach(function (f) { entries.push([ctx.top + '/Unmatched/' + f[0], f[1]]); });
+      entries.unshift([ctx.top + '/00 Payroll Check - ' + ctx.mon + '.xlsx', checkBook(gl, ctx)]);
+      dlStatus('Zipping…');
+      return { blob: await zipBlob(entries), name: ctx.top + '.zip' };
+    });
+  });
+  function downloadHome(folder) {
+    withDownload(folder, async function () {
+      var ctx = context();
+      var g = groupsFor(state.result).groups.find(function (x) { return x.folder === folder; });
+      if (!g) throw new Error('That home is no longer in the list. Try again.');
+      var files = await homeEntries(g, ctx);
+      var entries = files.map(function (f) { return [g.folder + '/' + f[0], f[1]]; });
+      return { blob: await zipBlob(entries), name: safeName(g.folder + ' - Payslips ' + ctx.mon) + '.zip' };
+    });
+  }
+
+  /* ---------- boot ---------- */
+  renderFiles();
+  var miss = libsMissing();
+  if (miss.length) showError('Part of the tool did not load (' + miss.join(', ') + '). Check the internet connection and reload the page.');
+})();
+</script>
+
+</body></html>
