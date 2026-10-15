@@ -196,6 +196,7 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
     <button class="nav-link" data-tab="payments" onclick="showTab('payments')"><span class="nav-icon">💳</span> Payments</button>
     <button class="nav-link" data-tab="petty-cash" onclick="showTab('petty-cash')"><span class="nav-icon">💷</span> Petty Cash</button>
     <button class="nav-link" data-tab="building-works" onclick="showTab('building-works')"><span class="nav-icon">🔨</span> Building Works</button>
+    <button class="nav-link" data-tab="payroll" onclick="showTab('payroll')"><span class="nav-icon">💼</span> Payroll</button>
     <button class="nav-link" data-tab="reports" onclick="showTab('reports')"><span class="nav-icon">📊</span> Reports</button>
     <button class="nav-link" data-tab="homes" onclick="showTab('homes')"><span class="nav-icon">🏡</span> Homes</button>
     <button class="nav-link" data-tab="ofsted" onclick="showTab('ofsted')"><span class="nav-icon">🔎</span> Ofsted</button>
@@ -340,6 +341,28 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
       </div>
     </div>
 
+    <!-- ============ PAYROLL ============ -->
+    <div id="payroll-tab" class="tab-content hidden">
+      <div class="section">
+        <div class="section-head"><h2>💼 Payroll</h2><button class="btn btn-primary" onclick="showPayrollModal()">+ Add Payroll</button></div>
+        <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Monthly pay runs: wages, pension (NEST), PAYE/HMRC and the like. Each is counted once in that month's total and reports. Paying one books next month automatically. The detailed per-employee figures stay in Capium; this holds the number and the paperwork.</p>
+        <div class="filters">
+          <input type="search" id="pr-search" placeholder="🔍 Search item or account…" oninput="renderPayroll()">
+          <select id="pr-filter-month" onchange="renderPayroll()"><option value="All">All Months</option></select>
+          <select id="pr-filter-status" onchange="renderPayroll()">
+            <option value="All">All Status</option><option value="Pending">To pay</option><option value="Paid">Paid</option>
+          </select>
+        </div>
+        <div class="summary-bar" id="pr-summary"></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Item</th><th>Paid To</th><th>Amount</th><th>Pay Date</th><th>Frequency</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="pr-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- ============ REPORTS ============ -->
     <div id="reports-tab" class="tab-content hidden">
       <div class="section no-print">
@@ -451,7 +474,7 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
       </div>
       <div class="section">
         <h2>ℹ️ About</h2>
-        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;"><strong>Caring Feathers Finance Hub — version 3.3</strong> (27 July 2026)<br>
+        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;"><strong>Caring Feathers Finance Hub — version 3.4</strong> (15 October 2026)<br>
         Shared team data with live sync · recurring-bill forecast · petty cash accounts · building works · Ofsted &amp; Young People tracking (incl. council + IPA) · phone notifications.</p>
       </div>
     </div>
@@ -467,6 +490,7 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
   <button class="nav-link" data-tab="payments" onclick="showTab('payments')"><span class="nav-icon">💳</span>Pay</button>
   <button class="nav-link" data-tab="petty-cash" onclick="showTab('petty-cash')"><span class="nav-icon">💷</span>Petty</button>
   <button class="nav-link" data-tab="building-works" onclick="showTab('building-works')"><span class="nav-icon">🔨</span>Works</button>
+  <button class="nav-link" data-tab="payroll" onclick="showTab('payroll')"><span class="nav-icon">💼</span>Payroll</button>
   <button class="nav-link" data-tab="reports" onclick="showTab('reports')"><span class="nav-icon">📊</span>Reports</button>
   <button class="nav-link" data-tab="homes" onclick="showTab('homes')"><span class="nav-icon">🏡</span>Homes</button>
   <button class="nav-link" data-tab="ofsted" onclick="showTab('ofsted')"><span class="nav-icon">🔎</span>Ofsted</button>
@@ -552,6 +576,34 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
     <div class="form-actions">
       <button type="button" class="btn btn-secondary" onclick="closeModal('home-modal')">Cancel</button>
       <button type="submit" class="btn btn-primary">Save Home</button>
+    </div>
+  </form>
+</div></div>
+
+<div id="pr-modal" class="modal"><div class="modal-content">
+  <h2 id="pr-modal-title">Add Payroll</h2>
+  <form id="pr-form" onsubmit="savePayroll(event)">
+    <div class="form-grid">
+      <div class="form-group full"><label>Item *</label><input type="text" id="pr-item" list="pr-item-list" maxlength="60" placeholder="e.g. Wages, NEST pension, PAYE / HMRC" required><datalist id="pr-item-list">
+        <option>Wages</option><option>NEST pension</option><option>PAYE / HMRC</option><option>Employer NIC</option><option>Mileage</option><option>Agency wages</option></datalist></div>
+      <div class="form-group"><label>Amount (£) *</label><input type="number" id="pr-amount" step="0.01" min="0" required></div>
+      <div class="form-group"><label>Pay Date *</label><input type="date" id="pr-date" required></div>
+      <div class="form-group"><label>Frequency</label><select id="pr-frequency">
+        <option selected>Monthly</option><option>Every 4 Weeks</option><option>Weekly</option><option>Quarterly</option><option>Annual</option><option>Ad-hoc</option></select></div>
+      <div class="form-group"><label>Paid from (account)</label>
+        <select id="pr-paidto-sel" onchange="document.getElementById('pr-paidto-other').style.display = this.value === '__OTHER__' ? 'block' : 'none'"></select>
+        <input type="text" id="pr-paidto-other" placeholder="Type the account name" style="display:none;margin-top:8px;">
+      </div>
+      <div class="form-group full" id="pr-paid-wrap" style="flex-direction:row;align-items:center;gap:8px;background:#f8f9fb;padding:10px 12px;border-radius:8px;">
+        <input type="checkbox" id="pr-paid" style="width:18px;height:18px;flex:none;" onchange="document.getElementById('pr-method-wrap').style.display=this.checked?'flex':'none'">
+        <label for="pr-paid" style="margin:0;font-weight:600;">Already paid <span style="font-weight:400;color:var(--muted);">(records the payment straight away)</span></label>
+      </div>
+      <div class="form-group full" id="pr-method-wrap" style="display:none;"><label>Payment Method</label><select id="pr-method">
+        <option value="">Select Method</option><option>Bank Transfer</option><option>Direct Debit</option><option>Card</option><option>Cash</option></select></div>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" onclick="closeModal('pr-modal')">Cancel</button>
+      <button type="submit" class="btn btn-primary">Save</button>
     </div>
   </form>
 </div></div>
@@ -933,6 +985,7 @@ function showTab(name) {
   if (name === 'young-people') renderYoungPeople();
   if (name === 'petty-cash') renderPettyCash();
   if (name === 'building-works') renderBuildingWorks();
+  if (name === 'payroll') renderPayroll();
   window.scrollTo(0, 0);
 }
 
@@ -1714,6 +1767,124 @@ function deleteYp(id) {
 /* =================== Building Works =================== */
 // A building work IS a normal one-off bill (category "Building Works") plus its payment,
 // so it lands in every total exactly once. This page is just a purpose-built view of them.
+/* =================== Payroll =================== */
+// A payroll run IS a normal bill (category "Payroll") + its payment, so it lands in every total
+// once. Existing wages/pension bills are recognised too. Detail stays in Capium; this holds the number.
+function isPayrollBill(x) { const c = x.category || ''; return c === 'Payroll' || /payroll|wages?|\bnest\b|pension|\bpaye\b|hmrc/i.test(c); }
+function payrollItemName(b) { return b.notes || b.category || 'Payroll'; }
+let editingPayrollId = null;
+function renderPayroll() {
+  const monthSel = document.getElementById('pr-filter-month');
+  const prevM = monthSel.value;
+  const allPayroll = bills.filter(isPayrollBill);
+  const monthKeys = [...new Set(allPayroll.map(b => monthKey(b.nextDueDate)).filter(Boolean))].sort().reverse();
+  monthSel.innerHTML = '<option value="All">All Months</option>' + monthKeys.map(k => `<option value="${k}">${monthLabel(k)}</option>`).join('');
+  monthSel.value = [...monthSel.options].some(o => o.value === prevM) ? prevM : 'All';
+  const fMonth = monthSel.value;
+  const fStatus = document.getElementById('pr-filter-status').value;
+  const q = document.getElementById('pr-search').value.trim().toLowerCase();
+  const runs = allPayroll.filter(b => {
+    if (fMonth !== 'All' && monthKey(b.nextDueDate) !== fMonth) return false;
+    if (fStatus !== 'All' && b.status !== fStatus) return false;
+    if (q && !(`${payrollItemName(b)} ${b.bankAccount} ${b.home}`.toLowerCase().includes(q))) return false;
+    return true;
+  }).sort((a, b) => (b.nextDueDate || '').localeCompare(a.nextDueDate || ''));
+  const tm = currentMonthKey();
+  const thisMonth = allPayroll.filter(b => monthKey(b.nextDueDate) === tm);
+  const yearStr = String(new Date().getFullYear());
+  const paidThisYear = payments.filter(p => isPayrollBill(p) && (p.paidDate || '').startsWith(yearStr)).reduce((s, p) => s + amt(p.amount), 0);
+  const toPay = allPayroll.filter(b => b.status === 'Pending');
+  document.getElementById('pr-summary').innerHTML =
+    `<div>Due in ${monthLabel(tm)}: <strong>${money(sumAmounts(thisMonth))}</strong></div>
+     <div>Paid this year: <strong style="color:var(--green);">${money(paidThisYear)}</strong></div>
+     <div>Still to pay: <strong style="color:var(--red);">${money(sumAmounts(toPay))}</strong> (${toPay.length})</div>
+     <div>Showing: <strong>${runs.length}</strong></div>`;
+  const tbody = document.getElementById('pr-tbody');
+  tbody.innerHTML = runs.length ? runs.map(b => `<tr>
+      <td><strong>${esc(payrollItemName(b))}</strong>${b.home && b.home !== 'All homes' ? `<br><small style="color:var(--muted);">${esc(b.home)}</small>` : ''}</td>
+      <td>${(() => { if (!b.bankAccount) return '<span style="color:var(--muted);">—</span>'; const pd = payees.find(p => p.name === b.bankAccount); return esc(b.bankAccount) + (pd && pd.accountNumber ? `<br><small style="color:var(--muted);">acc ${esc(pd.accountNumber)}</small>` : ''); })()}</td>
+      <td>${b.amount ? '<strong>' + money(b.amount) + '</strong>' : '—'}</td>
+      <td><small>${fmtDate(b.nextDueDate) || '—'}</small></td>
+      <td><small>${esc(b.frequency || 'Monthly')}</small></td>
+      <td>${getBillStatusBadge(b)}</td>
+      <td><div class="actions">
+        ${b.status === 'Pending' ? `<button class="btn btn-success action-btn" onclick="openPayModal('${b.id}')">✓ Pay</button>` : ''}
+        <button class="btn btn-secondary action-btn" onclick="showPayrollModal('${b.id}')">Edit</button>
+        <button class="btn btn-danger action-btn" onclick="deletePayroll('${b.id}')">🗑</button>
+      </div></td></tr>`).join('') :
+    '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:22px;">No payroll recorded yet. Use "+ Add Payroll". Your existing Wages and NEST will show here automatically.</td></tr>';
+}
+function prPayeeOptions() {
+  const names = [...new Set([...payees.map(p => p.name).filter(Boolean), ...bills.filter(isPayrollBill).map(b => b.bankAccount).filter(Boolean)])];
+  return '<option value="">— not set —</option>' +
+    names.map(n => { const pd = payees.find(p => p.name === n); const acc = pd && pd.accountNumber ? ' (acc ' + pd.accountNumber + ')' : ''; return `<option value="${esc(n)}">${esc(n)}${esc(acc)}</option>`; }).join('') +
+    '<option value="__OTHER__">Other account…</option>';
+}
+function showPayrollModal(billId) {
+  editingPayrollId = billId || null;
+  document.getElementById('pr-form').reset();
+  const psel = document.getElementById('pr-paidto-sel');
+  psel.innerHTML = prPayeeOptions();
+  document.getElementById('pr-paidto-other').style.display = 'none';
+  document.getElementById('pr-method-wrap').style.display = 'none';
+  document.getElementById('pr-paid-wrap').style.display = billId ? 'none' : 'flex';
+  if (billId) {
+    const b = bills.find(x => x.id === billId); if (!b) return;
+    document.getElementById('pr-modal-title').textContent = 'Edit Payroll';
+    document.getElementById('pr-item').value = payrollItemName(b);
+    document.getElementById('pr-amount').value = b.amount || '';
+    document.getElementById('pr-date').value = b.nextDueDate || '';
+    document.getElementById('pr-frequency').value = b.frequency || 'Monthly';
+    if (!b.bankAccount) psel.value = '';
+    else if ([...psel.options].some(o => o.value === b.bankAccount)) psel.value = b.bankAccount;
+    else { psel.value = '__OTHER__'; const oth = document.getElementById('pr-paidto-other'); oth.style.display = 'block'; oth.value = b.bankAccount; }
+  } else {
+    document.getElementById('pr-modal-title').textContent = 'Add Payroll';
+    document.getElementById('pr-date').value = todayISO();
+    document.getElementById('pr-frequency').value = 'Monthly';
+  }
+  document.getElementById('pr-modal').classList.add('show');
+}
+function savePayroll(e) {
+  e.preventDefault();
+  const paidTo = (() => { const v = document.getElementById('pr-paidto-sel').value; return v === '__OTHER__' ? document.getElementById('pr-paidto-other').value.trim() : v; })();
+  const data = {
+    category: 'Payroll',
+    notes: document.getElementById('pr-item').value.trim(),
+    bankAccount: paidTo,
+    amount: document.getElementById('pr-amount').value,
+    nextDueDate: document.getElementById('pr-date').value,
+    frequency: document.getElementById('pr-frequency').value,
+    reminderDays: 5
+  };
+  if (editingPayrollId) {
+    const i = bills.findIndex(b => b.id === editingPayrollId);
+    bills[i] = { ...bills[i], ...data };
+    saveData(); dbUpsert('bills', bills[i]);
+    closeModal('pr-modal'); refreshAll(); toast('Payroll updated');
+    return;
+  }
+  const alreadyPaid = document.getElementById('pr-paid').checked;
+  const bill = { ...data, id: nextId('B', bills, 4), home: 'All homes', vendor: '', status: alreadyPaid ? 'Paid' : 'Pending' };
+  bills.push(bill);
+  dbUpsert('bills', bill);
+  if (alreadyPaid) {
+    const pay = { id: 'P' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), billId: bill.id,
+      home: 'All homes', category: 'Payroll', paidDate: bill.nextDueDate, amount: bill.amount,
+      method: document.getElementById('pr-method').value, notes: data.notes };
+    payments.push(pay);
+    dbUpsert('payments', pay);
+  }
+  saveData(); closeModal('pr-modal'); refreshAll();
+  toast(alreadyPaid ? 'Payroll recorded as paid' : 'Payroll added, showing as to-pay');
+}
+function deletePayroll(id) {
+  const b = bills.find(x => x.id === id);
+  if (!confirm(`Delete payroll "${b ? payrollItemName(b) : 'this item'}"? Any payment already recorded for it stays in the payment history.`)) return;
+  bills = bills.filter(x => x.id !== id);
+  saveData(); dbDelete('bills', id); refreshAll(); toast('Payroll deleted');
+}
+
 function isBuildingWork(x) { return /building\s*works?/i.test(x.category || ''); }
 let editingBwId = null;
 function renderBuildingWorks() {
@@ -2103,6 +2274,7 @@ function refreshAll() {
   if (!document.getElementById('young-people-tab').classList.contains('hidden')) renderYoungPeople();
   if (!document.getElementById('petty-cash-tab').classList.contains('hidden')) renderPettyCash();
   if (!document.getElementById('building-works-tab').classList.contains('hidden')) renderBuildingWorks();
+  if (!document.getElementById('payroll-tab').classList.contains('hidden')) renderPayroll();
 }
 async function init() {
   loadData();
