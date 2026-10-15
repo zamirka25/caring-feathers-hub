@@ -346,6 +346,25 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
       <div class="section">
         <div class="section-head"><h2>💼 Payroll</h2><button class="btn btn-primary" onclick="showPayrollModal()">+ Add Payroll</button></div>
         <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Monthly pay runs: wages, pension (NEST), PAYE/HMRC and the like. Each is counted once in that month's total and reports. Paying one books next month automatically. The detailed per-employee figures stay in Capium; this holds the number and the paperwork.</p>
+        <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between;">
+            <div><strong>📄 Payslip Sorter</strong> <span style="font-size:12px;color:var(--muted);">files stay on your device; share it from the tool's own menu</span></div>
+            <a class="btn btn-primary" href="https://claude.ai/artifact/Ak5FoEEhv2tRsxAHrwhYAa" target="_blank" rel="noopener" style="text-decoration:none;">Open Payslip Sorter →</a>
+          </div>
+          <details style="margin-top:10px;">
+            <summary style="cursor:pointer;font-size:13px;font-weight:600;color:var(--blue);">Monthly process (about 5 minutes)</summary>
+            <div style="font-size:12.5px;line-height:1.6;margin-top:8px;">
+              <ol style="margin:0 0 8px 18px;padding:0;">
+                <li>Get this month's Payroll Summary (.xlsx) and the payslip PDF(s). Use the original unsplit PDF from the payroll software; manual splitting causes duplicates.</li>
+                <li>Open the Sorter and drop in: this month's summary, all payslip PDFs, and (optional) last month's summary to list starters, leavers and home moves.</li>
+                <li>Work through Issues from HIGH down: missing payslips, net pay mismatches, unmatched pages, rows with no House.</li>
+                <li>For any page not on the summary (for example a new starter), pick the home under "File these by hand".</li>
+                <li>Download everything (.zip) for records, or one ZIP per home to send each manager only their own staff.</li>
+              </ol>
+              <p style="margin:0;"><strong>Rules:</strong> the House column on the summary decides the home, so if someone moves home update the summary first. Staff changes are picked up automatically each month. Hold any payslip with a HIGH issue until payroll confirms the figure.</p>
+            </div>
+          </details>
+        </div>
         <div class="filters">
           <input type="search" id="pr-search" placeholder="🔍 Search item or account…" oninput="renderPayroll()">
           <select id="pr-filter-month" onchange="renderPayroll()"><option value="All">All Months</option></select>
@@ -474,7 +493,7 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
       </div>
       <div class="section">
         <h2>ℹ️ About</h2>
-        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;"><strong>Caring Feathers Finance Hub — version 3.4</strong> (15 October 2026)<br>
+        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;"><strong>Caring Feathers Finance Hub — version 3.5</strong> (15 October 2026)<br>
         Shared team data with live sync · recurring-bill forecast · petty cash accounts · building works · Ofsted &amp; Young People tracking (incl. council + IPA) · phone notifications.</p>
       </div>
     </div>
