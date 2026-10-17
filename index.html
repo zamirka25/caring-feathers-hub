@@ -198,6 +198,7 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
     <button class="nav-link" data-tab="building-works" onclick="showTab('building-works')"><span class="nav-icon">🔨</span> Building Works</button>
     <button class="nav-link" data-tab="payroll" onclick="showTab('payroll')"><span class="nav-icon">💼</span> Payroll</button>
     <button class="nav-link" data-tab="reports" onclick="showTab('reports')"><span class="nav-icon">📊</span> Reports</button>
+    <button class="nav-link" data-tab="documents" onclick="showTab('documents')"><span class="nav-icon">📁</span> Documents</button>
     <button class="nav-link" data-tab="homes" onclick="showTab('homes')"><span class="nav-icon">🏡</span> Homes</button>
     <button class="nav-link" data-tab="ofsted" onclick="showTab('ofsted')"><span class="nav-icon">🔎</span> Ofsted</button>
     <button class="nav-link" data-tab="young-people" onclick="showTab('young-people')"><span class="nav-icon">🧒</span> Young People</button>
@@ -409,6 +410,29 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
       <div class="section"><h2>📈 12-Month Spending Trend</h2><div class="trend-wrap" id="rep-trend"></div></div>
     </div>
 
+    <!-- ============ DOCUMENTS ============ -->
+    <div id="documents-tab" class="tab-content hidden">
+      <div class="section">
+        <div class="section-head"><h2>📁 Documents</h2><button class="btn btn-primary" id="doc-add-btn" onclick="showDocModal()">+ Upload Document</button></div>
+        <div id="doc-setup"></div>
+        <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">Store payroll summaries (filed by month), Ofsted reports, IPA agreements and invoices. Private to signed-in team members, nothing is shared by a public link.</p>
+        <div class="filters">
+          <input type="search" id="doc-search" placeholder="🔍 Search documents…" oninput="renderDocuments()">
+          <select id="doc-filter-cat" onchange="renderDocuments()">
+            <option value="All">All Types</option><option>Payroll Summary</option><option>Ofsted</option><option>IPA Agreement</option><option>Invoice</option><option>Other</option>
+          </select>
+          <select id="doc-filter-month" onchange="renderDocuments()"><option value="All">All Months</option></select>
+        </div>
+        <div class="summary-bar" id="doc-summary"></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Document</th><th>Type</th><th>Month</th><th>Size</th><th>Added</th><th>Actions</th></tr></thead>
+            <tbody id="doc-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- ============ HOMES ============ -->
     <div id="homes-tab" class="tab-content hidden">
       <div class="section-head"><h2>🏡 Managed Homes</h2><button class="btn btn-primary" onclick="showAddHomeModal()">+ Add Home</button></div>
@@ -493,7 +517,7 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
       </div>
       <div class="section">
         <h2>ℹ️ About</h2>
-        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;"><strong>Caring Feathers Finance Hub — version 3.6</strong> (15 October 2026)<br>
+        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;"><strong>Caring Feathers Finance Hub — version 3.7</strong> (17 October 2026)<br>
         Shared team data with live sync · recurring-bill forecast · petty cash accounts · building works · Ofsted &amp; Young People tracking (incl. council + IPA) · phone notifications.</p>
       </div>
     </div>
@@ -511,6 +535,7 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
   <button class="nav-link" data-tab="building-works" onclick="showTab('building-works')"><span class="nav-icon">🔨</span>Works</button>
   <button class="nav-link" data-tab="payroll" onclick="showTab('payroll')"><span class="nav-icon">💼</span>Payroll</button>
   <button class="nav-link" data-tab="reports" onclick="showTab('reports')"><span class="nav-icon">📊</span>Reports</button>
+  <button class="nav-link" data-tab="documents" onclick="showTab('documents')"><span class="nav-icon">📁</span>Docs</button>
   <button class="nav-link" data-tab="homes" onclick="showTab('homes')"><span class="nav-icon">🏡</span>Homes</button>
   <button class="nav-link" data-tab="ofsted" onclick="showTab('ofsted')"><span class="nav-icon">🔎</span>Ofsted</button>
   <button class="nav-link" data-tab="young-people" onclick="showTab('young-people')"><span class="nav-icon">🧒</span>YP</button>
@@ -595,6 +620,25 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
     <div class="form-actions">
       <button type="button" class="btn btn-secondary" onclick="closeModal('home-modal')">Cancel</button>
       <button type="submit" class="btn btn-primary">Save Home</button>
+    </div>
+  </form>
+</div></div>
+
+<div id="doc-modal" class="modal"><div class="modal-content">
+  <h2 id="doc-modal-title">Upload Document</h2>
+  <form id="doc-form" onsubmit="saveDoc(event)">
+    <div class="form-grid">
+      <div class="form-group full"><label>File *</label><input type="file" id="doc-file" required></div>
+      <div class="form-group"><label>Type *</label><select id="doc-cat" onchange="document.getElementById('doc-month-wrap').style.display = this.value==='Payroll Summary' ? 'flex' : 'flex'">
+        <option>Payroll Summary</option><option>Ofsted</option><option>IPA Agreement</option><option>Invoice</option><option>Other</option></select></div>
+      <div class="form-group" id="doc-month-wrap"><label>Month <span style="font-weight:400;color:var(--muted);">(for filing)</span></label><input type="month" id="doc-month"></div>
+      <div class="form-group"><label>Home <span style="font-weight:400;color:var(--muted);">(optional)</span></label><select id="doc-home"></select></div>
+      <div class="form-group"><label>Label <span style="font-weight:400;color:var(--muted);">(optional)</span></label><input type="text" id="doc-label" maxlength="80" placeholder="e.g. October payroll"></div>
+    </div>
+    <p id="doc-upload-status" style="font-size:13px;color:var(--muted);min-height:18px;margin-bottom:10px;"></p>
+    <div class="form-actions">
+      <button type="button" class="btn btn-secondary" onclick="closeModal('doc-modal')">Cancel</button>
+      <button type="submit" class="btn btn-primary" id="doc-save-btn">Upload</button>
     </div>
   </form>
 </div></div>
@@ -720,11 +764,12 @@ tr.month-row td { background: #eef2ff; font-weight: 700; color: #3730a3; border-
 <script src="vendor/supabase.js"></script>
 <script>
 /* =================== State & storage =================== */
-let homes = [], bills = [], payments = [], youngPeople = [], payees = [], settings = {};
+let homes = [], bills = [], payments = [], youngPeople = [], payees = [], documents = [], settings = {};
 let editingBillId = null, editingHomeId = null, editingYpId = null;
 let calMonth = '';   // YYYY-MM shown on calendar
-const schemaReady = { yp: true, pc: true, payees: true };   // set false if the young_people table / Ofsted columns / petty-cash columns / payees table aren't created yet
-const LS = { homes: 'cfx-homes', bills: 'cfx-bills', payments: 'cfx-payments', youngPeople: 'cfx-yp', payees: 'cfx-payees', settings: 'cfx-settings' };
+const schemaReady = { yp: true, pc: true, payees: true, docs: true };
+const LS = { homes: 'cfx-homes', bills: 'cfx-bills', payments: 'cfx-payments', youngPeople: 'cfx-yp', payees: 'cfx-payees', documents: 'cfx-docs', settings: 'cfx-settings' };
+const DOC_BUCKET = 'cf-docs';
 
 /* =================== Shared cloud database =================== */
 const SUPA_URL = 'https://dsvcfegwiqdbabywxnod.supabase.co';
@@ -746,7 +791,9 @@ const ypToRow = y => ({ id: y.id, initials: y.initials || '', home: y.home || ''
 const rowToYp = r => ({ id: r.id, initials: r.initials || '', home: r.home || '', council: r.council || '', dateIn: r.date_in || '', dateOut: r.date_out || '', ipaReceived: !!r.ipa_received, ipaDate: r.ipa_date || '', notes: r.notes || '' });
 const payeeToRow = p => ({ id: p.id, name: p.name || '', sort_code: p.sortCode || '', account_number: p.accountNumber || '' });
 const rowToPayee = r => ({ id: r.id, name: r.name || '', sortCode: r.sort_code || '', accountNumber: r.account_number || '' });
-const TABLE_MAP = { homes: [homeToRow, rowToHome], bills: [billToRow, rowToBill], payments: [payToRow, rowToPay], young_people: [ypToRow, rowToYp], payees: [payeeToRow, rowToPayee] };
+const docToRow = d => ({ id: d.id, category: d.category || 'Other', label: d.label || '', month: d.month || '', home: d.home || '', file_path: d.filePath || '', file_name: d.fileName || '', size: +d.size || 0 });
+const rowToDoc = r => ({ id: r.id, category: r.category || 'Other', label: r.label || '', month: r.month || '', home: r.home || '', filePath: r.file_path || '', fileName: r.file_name || '', size: +r.size || 0, uploadedAt: r.updated_at || '' });
+const TABLE_MAP = { homes: [homeToRow, rowToHome], bills: [billToRow, rowToBill], payments: [payToRow, rowToPay], young_people: [ypToRow, rowToYp], payees: [payeeToRow, rowToPayee], documents: [docToRow, rowToDoc] };
 
 function dbUpsert(table, obj) {
   db.from(table).upsert(TABLE_MAP[table][0](obj)).then(({ error }) => { if (error) toast('⚠ Sync failed: ' + error.message); });
@@ -772,23 +819,26 @@ async function fetchAll() {
   homes = h.data.map(rowToHome); bills = b.data.map(rowToBill); payments = p.data.map(rowToPay);
   // Young People + Ofsted columns are added by the same migration. Probe BOTH (an explicit
   // column probe, since homes may be empty) and treat the feature as ready only if both exist.
-  const [y, hc, pc, pe] = await Promise.all([
+  const [y, hc, pc, pe, dc] = await Promise.all([
     db.from('young_people').select('*'),
     db.from('homes').select('residential').limit(1),
     db.from('homes').select('pc_bank').limit(1),
-    db.from('payees').select('*')
+    db.from('payees').select('*'),
+    db.from('documents').select('*')
   ]);
   schemaReady.yp = !y.error && !hc.error;
   schemaReady.pc = !pc.error;
   schemaReady.payees = !pe.error;
+  schemaReady.docs = !dc.error;
   youngPeople = y.error ? [] : y.data.map(rowToYp);
   payees = pe.error ? [] : pe.data.map(rowToPayee);
+  documents = dc.error ? [] : dc.data.map(rowToDoc);
   saveData();
 }
 
 function applyChange(table, payload) {
   const conv = TABLE_MAP[table][1];
-  const cur = table === 'homes' ? homes : table === 'bills' ? bills : table === 'payments' ? payments : table === 'payees' ? payees : youngPeople;
+  const cur = table === 'homes' ? homes : table === 'bills' ? bills : table === 'payments' ? payments : table === 'payees' ? payees : table === 'documents' ? documents : youngPeople;
   let next = cur;
   if (payload.eventType === 'DELETE') {
     next = cur.filter(x => x.id !== (payload.old && payload.old.id));
@@ -798,7 +848,8 @@ function applyChange(table, payload) {
     if (i >= 0) cur[i] = obj; else cur.push(obj);
   }
   if (table === 'homes') homes = next; else if (table === 'bills') bills = next;
-  else if (table === 'payments') payments = next; else if (table === 'payees') payees = next; else youngPeople = next;
+  else if (table === 'payments') payments = next; else if (table === 'payees') payees = next;
+  else if (table === 'documents') documents = next; else youngPeople = next;
   saveData(); updateHomeFilters(); refreshAll();
 }
 function subscribeRealtime() {
@@ -809,6 +860,7 @@ function subscribeRealtime() {
   // Only bind tables that exist — binding a missing table can error the whole channel
   if (schemaReady.yp) ch.on('postgres_changes', { event: '*', schema: 'public', table: 'young_people' }, p => applyChange('young_people', p));
   if (schemaReady.payees) ch.on('postgres_changes', { event: '*', schema: 'public', table: 'payees' }, p => applyChange('payees', p));
+  if (schemaReady.docs) ch.on('postgres_changes', { event: '*', schema: 'public', table: 'documents' }, p => applyChange('documents', p));
   ch.subscribe();
 }
 
@@ -978,8 +1030,9 @@ function loadData() {
     payments = JSON.parse(localStorage.getItem(LS.payments)) || [];
     youngPeople = JSON.parse(localStorage.getItem(LS.youngPeople)) || [];
     payees = JSON.parse(localStorage.getItem(LS.payees)) || [];
+    documents = JSON.parse(localStorage.getItem(LS.documents)) || [];
     settings = JSON.parse(localStorage.getItem(LS.settings)) || {};
-  } catch (e) { homes = []; bills = []; payments = []; youngPeople = []; payees = []; settings = {}; }
+  } catch (e) { homes = []; bills = []; payments = []; youngPeople = []; payees = []; documents = []; settings = {}; }
   if (settings.defaultReminderDays == null) settings.defaultReminderDays = 7;
 }
 function saveData() {
@@ -988,6 +1041,7 @@ function saveData() {
   localStorage.setItem(LS.payments, JSON.stringify(payments));
   localStorage.setItem(LS.youngPeople, JSON.stringify(youngPeople));
   localStorage.setItem(LS.payees, JSON.stringify(payees));
+  try { localStorage.setItem(LS.documents, JSON.stringify(documents)); } catch (e) {}
   localStorage.setItem(LS.settings, JSON.stringify(settings));
 }
 
@@ -1005,6 +1059,7 @@ function showTab(name) {
   if (name === 'petty-cash') renderPettyCash();
   if (name === 'building-works') renderBuildingWorks();
   if (name === 'payroll') renderPayroll();
+  if (name === 'documents') renderDocuments();
   window.scrollTo(0, 0);
 }
 
@@ -1786,6 +1841,122 @@ function deleteYp(id) {
 /* =================== Building Works =================== */
 // A building work IS a normal one-off bill (category "Building Works") plus its payment,
 // so it lands in every total exactly once. This page is just a purpose-built view of them.
+/* =================== Documents vault =================== */
+const DOC_MIGRATION_SQL = [
+  "create table if not exists documents (",
+  "  id text primary key, category text default 'Other', label text default '', month text default '',",
+  "  home text default '', file_path text default '', file_name text default '', size bigint default 0,",
+  "  updated_at timestamptz default now()",
+  ");",
+  "alter table documents enable row level security;",
+  "drop policy if exists \"team can do everything\" on documents;",
+  "create policy \"team can do everything\" on documents for all to authenticated using (true) with check (true);",
+  "do $$ begin begin alter publication supabase_realtime add table documents; exception when duplicate_object then null; end; end $$;",
+  "insert into storage.buckets (id, name, public) values ('cf-docs','cf-docs', false) on conflict (id) do nothing;",
+  "drop policy if exists \"cf docs read\" on storage.objects;",
+  "drop policy if exists \"cf docs write\" on storage.objects;",
+  "drop policy if exists \"cf docs update\" on storage.objects;",
+  "drop policy if exists \"cf docs delete\" on storage.objects;",
+  "create policy \"cf docs read\" on storage.objects for select to authenticated using (bucket_id = 'cf-docs');",
+  "create policy \"cf docs write\" on storage.objects for insert to authenticated with check (bucket_id = 'cf-docs');",
+  "create policy \"cf docs update\" on storage.objects for update to authenticated using (bucket_id = 'cf-docs');",
+  "create policy \"cf docs delete\" on storage.objects for delete to authenticated using (bucket_id = 'cf-docs');"
+].join("\n");
+function copyDocsSql() {
+  const open = () => window.open('https://supabase.com/dashboard/project/dsvcfegwiqdbabywxnod/sql/new', '_blank');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(DOC_MIGRATION_SQL).then(() => { toast('✓ Copied. In Supabase: clear the box (Ctrl+A, Delete), paste, Run'); open(); }, () => { open(); window.prompt('Copy this, paste into the Supabase SQL editor, and Run:', DOC_MIGRATION_SQL); });
+  } else { open(); window.prompt('Copy this, paste into the Supabase SQL editor, and Run:', DOC_MIGRATION_SQL); }
+}
+function docSetupBannerHTML() {
+  return `<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:16px;margin-bottom:16px;">
+    <strong style="color:var(--blue);">One-time setup needed</strong>
+    <p style="font-size:13px;color:var(--muted);margin:6px 0 12px;">The document vault needs a quick database update (it adds a private, secure store for your files). Only the administrator needs to do it, once.</p>
+    <button class="btn btn-primary" onclick="copyDocsSql()">Copy update &amp; open Supabase</button>
+    <p style="font-size:12px;color:var(--muted);margin-top:10px;">In Supabase: <strong>SQL Editor, clear the box (Ctrl+A then Delete), paste (Ctrl+V), Run</strong>, then reload this app.</p>
+  </div>`;
+}
+function fmtBytes(n) { n = +n || 0; return n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(0) + ' KB' : (n / 1048576).toFixed(1) + ' MB'; }
+function renderDocuments() {
+  document.getElementById('doc-setup').innerHTML = schemaReady.docs ? '' : docSetupBannerHTML();
+  document.getElementById('doc-add-btn').disabled = !schemaReady.docs;
+  const monthSel = document.getElementById('doc-filter-month');
+  const prevM = monthSel.value;
+  const months = [...new Set(documents.map(d => d.month).filter(Boolean))].sort().reverse();
+  monthSel.innerHTML = '<option value="All">All Months</option>' + months.map(m => `<option value="${m}">${monthLabel(m)}</option>`).join('');
+  monthSel.value = [...monthSel.options].some(o => o.value === prevM) ? prevM : 'All';
+  const fCat = document.getElementById('doc-filter-cat').value;
+  const fMonth = monthSel.value;
+  const q = document.getElementById('doc-search').value.trim().toLowerCase();
+  const list = documents.filter(d => {
+    if (fCat !== 'All' && d.category !== fCat) return false;
+    if (fMonth !== 'All' && d.month !== fMonth) return false;
+    if (q && !(`${d.label} ${d.fileName} ${d.category} ${d.home} ${d.month}`.toLowerCase().includes(q))) return false;
+    return true;
+  }).sort((a, b) => (b.month || '').localeCompare(a.month || '') || (b.uploadedAt || '').localeCompare(a.uploadedAt || ''));
+  document.getElementById('doc-summary').innerHTML =
+    `<div><strong>${documents.length}</strong> document${documents.length === 1 ? '' : 's'}</div>
+     <div>Showing: <strong>${list.length}</strong></div>
+     <div>Total size: <strong>${fmtBytes(documents.reduce((s, d) => s + (+d.size || 0), 0))}</strong></div>`;
+  const tbody = document.getElementById('doc-tbody');
+  tbody.innerHTML = list.length ? list.map(d => `<tr>
+     <td><strong>${esc(d.label || d.fileName)}</strong>${d.label && d.fileName ? `<br><small style="color:var(--muted);">${esc(d.fileName)}</small>` : ''}${d.home ? `<br><small style="color:var(--muted);">${esc(d.home)}</small>` : ''}</td>
+     <td>${esc(d.category)}</td>
+     <td>${d.month ? esc(monthLabel(d.month)) : '—'}</td>
+     <td><small>${fmtBytes(d.size)}</small></td>
+     <td><small>${d.uploadedAt ? fmtDate(d.uploadedAt) : '—'}</small></td>
+     <td><div class="actions">
+       <button class="btn btn-secondary action-btn" onclick="downloadDoc('${d.id}')">⬇ Open</button>
+       <button class="btn btn-danger action-btn" onclick="deleteDoc('${d.id}')">🗑</button>
+     </div></td></tr>`).join('') :
+    `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:22px;">${documents.length ? 'None match these filters.' : (schemaReady.docs ? 'No documents yet. Use "+ Upload Document".' : 'Complete the one-time setup above first.')}</td></tr>`;
+}
+function showDocModal() {
+  if (!schemaReady.docs) { renderDocuments(); toast('Please complete the one-time setup first'); return; }
+  document.getElementById('doc-form').reset();
+  document.getElementById('doc-home').innerHTML = '<option value="">— none —</option>' + homes.filter(h => h.active).map(h => `<option value="${esc(h.name)}">${esc(h.name)}</option>`).join('');
+  document.getElementById('doc-month').value = currentMonthKey();
+  document.getElementById('doc-upload-status').textContent = '';
+  document.getElementById('doc-save-btn').disabled = false;
+  document.getElementById('doc-modal').classList.add('show');
+}
+async function saveDoc(e) {
+  e.preventDefault();
+  const file = document.getElementById('doc-file').files[0];
+  if (!file) { toast('Choose a file first'); return; }
+  if (file.size > 25 * 1024 * 1024) { alert('That file is larger than 25 MB. Please upload a smaller file.'); return; }
+  const btn = document.getElementById('doc-save-btn');
+  const status = document.getElementById('doc-upload-status');
+  btn.disabled = true; status.textContent = 'Uploading…';
+  const id = 'D' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+  const safe = (file.name || 'file').replace(/[^\w.\-]+/g, '_').slice(-80);
+  const path = id + '/' + safe;
+  const up = await db.storage.from(DOC_BUCKET).upload(path, file, { upsert: false, contentType: file.type || 'application/octet-stream' });
+  if (up.error) { btn.disabled = false; status.textContent = ''; alert('Upload failed: ' + up.error.message); return; }
+  const doc = { id, category: document.getElementById('doc-cat').value, label: document.getElementById('doc-label').value.trim(),
+    month: document.getElementById('doc-month').value || '', home: document.getElementById('doc-home').value || '',
+    filePath: path, fileName: file.name, size: file.size, uploadedAt: new Date().toISOString() };
+  const ins = await db.from('documents').insert(docToRow(doc));
+  if (ins.error) { await db.storage.from(DOC_BUCKET).remove([path]); btn.disabled = false; status.textContent = ''; alert('Could not save: ' + ins.error.message); return; }
+  documents.push(doc);
+  saveData(); closeModal('doc-modal'); refreshAll(); toast('Document uploaded');
+}
+async function downloadDoc(id) {
+  const d = documents.find(x => x.id === id); if (!d) return;
+  const r = await db.storage.from(DOC_BUCKET).createSignedUrl(d.filePath, 120);
+  if (r.error || !r.data) { alert('Could not open: ' + (r.error ? r.error.message : 'unknown')); return; }
+  window.open(r.data.signedUrl, '_blank', 'noopener');
+}
+async function deleteDoc(id) {
+  const d = documents.find(x => x.id === id); if (!d) return;
+  if (!confirm(`Delete "${d.label || d.fileName}"? This removes it for the whole team.`)) return;
+  await db.storage.from(DOC_BUCKET).remove([d.filePath]);
+  const del = await db.from('documents').delete().eq('id', id);
+  if (del.error) { toast('⚠ ' + del.error.message); return; }
+  documents = documents.filter(x => x.id !== id);
+  saveData(); refreshAll(); toast('Document deleted');
+}
+
 /* =================== Payroll =================== */
 // A payroll run IS a normal bill (category "Payroll") + its payment, so it lands in every total
 // once. Existing wages/pension bills are recognised too. Detail stays in Capium; this holds the number.
@@ -2294,6 +2465,7 @@ function refreshAll() {
   if (!document.getElementById('petty-cash-tab').classList.contains('hidden')) renderPettyCash();
   if (!document.getElementById('building-works-tab').classList.contains('hidden')) renderBuildingWorks();
   if (!document.getElementById('payroll-tab').classList.contains('hidden')) renderPayroll();
+  if (!document.getElementById('documents-tab').classList.contains('hidden')) renderDocuments();
 }
 async function init() {
   loadData();
